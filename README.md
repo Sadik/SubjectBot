@@ -14,5 +14,4 @@ with the following content:
     [Telegram]
     token: 1223456789:abcdefghijklmnopqrstu
 
-This way I don't need to exclude lines from commit and I can't accidently commit my token
-Well I can if I didn't add the config.ini to gitignore.
+This way I don't need to exclude lines from commit and I can't accidently commit my token.
