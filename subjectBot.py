@@ -2,7 +2,7 @@
 import configparser
 import telebot
 from telebot import types
-import time
+import time, datetime
 import json
 
 config = configparser.ConfigParser()
@@ -50,6 +50,7 @@ def print_json(m):
             message_list = json.load(inFile)
         except ValueError:
             print("empty file")
+            tb.send_message(m.chat.id,"Keine Nachrichten gefunden")
             return
     inFile.close()
     json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
@@ -60,14 +61,56 @@ def print_json(m):
 def delete_json(m):
     open(messagesDataFile, "w").close()
 
+def print_stats(m):
+    message_list = []
+    with open(messagesDataFile, "r") as inFile:
+        try:
+            message_list = json.load(inFile)
+        except ValueError:
+            print("empty file")
+            tb.send_message(m.chat.id,"Keine Nachrichten gefunden")
+            return
+    inFile.close()
+    print ("message_list type: " + str(type(message_list)))
+
+    user_message_counter = dict() # wil hold {user_id: message count}
+    user_dict = dict() # will hold {}
+    oldest_time = time.time() # unix time now
+
+    for message in message_list:
+        print ("    " + str(message))
+        user_id = message['from_user']['id']
+        user_dict[user_id] = message['from_user']
+        if (user_id in user_message_counter):
+            user_message_counter[user_id] += 1
+        else:
+            user_message_counter[user_id] = 1
+        #print ("user_message_count:" + str(user_message_counter))
+        if (message['date'] < oldest_time):
+            oldest_time = message['date']
+
+    time_str = unixtime_to_readable_string(oldest_time)
+    tb.send_message(m.chat.id, "%d Nachrichten seit dem %s" % (len(message_list),time_str))
+
+    user_message_counter_string = ""
+    for key in user_message_counter:
+        first_name = user_dict[key]['first_name']
+        last_name = user_dict[key]['last_name']
+        count = user_message_counter[key]
+        user_message_counter_string += "%s %s: %s\n" % (first_name, last_name, count)
+    tb.send_message(m.chat.id, user_message_counter_string)
+
+def unixtime_to_readable_string(unixtime):
+    return datetime.datetime.fromtimestamp(unixtime).strftime('%d.%m.%y, %H:%M Uhr')
+
 def execute_commands(m):
     text = m.text
     if (text.startswith("/print_json")):
         print_json(m)
     if (text.startswith("/delete_json")):
         delete_json(m)
-    if (text.startswith("print_stats")):
-        pass
+    if (text.startswith("/print_stats" or text.startswith("/stats"))):
+        print_stats(m)
 
 def listener(messages):
     """
@@ -79,7 +122,6 @@ def listener(messages):
             collect_message(m)
             execute_commands(m)
             print_message_stats(m)
-            tb.reply_to(m, "I am replying to your message")
         else:
             tb.reply_to(m, "Only text messages are supported")
 
