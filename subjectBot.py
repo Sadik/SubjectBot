@@ -9,7 +9,6 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN = config['Telegram']['token']
 messagesDataFile = "messagesData"
-message_list = []
 
 def print_message_stats(m):
     print ("###################################")
@@ -21,46 +20,54 @@ def print_message_stats(m):
     print("Date (unix):   " + str(m.date))
     print("Text:          %s" % m.text)
 
-def collect_stats_from_message(m):
-    message_id = m.message_id
-    from_user = m.from_user
-    chat_id = m.chat
-    unixdate = m.date
-    text = m.text
-
 def jdefault(m):
     return m.__dict__
 
+def string_splitter(line, chars_in_each_line):
+    return [line[i:i + chars_in_each_line] for i in range(0, len(line), chars_in_each_line)]
+
 def collect_message(m):
-    global message_list
-    print ("collecting message")
-    print(json.dumps(m, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False))
-    #with open(messagesDataFile, "w") as outfile:
-#        json.dump(m, outfile, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
-
-
+    message_list = []
     with open(messagesDataFile, "r") as inFile:
         try:
             message_list = json.load(inFile)
         except ValueError:
             meessage_list = []
-
+    inFile.close()
     message_list.append(m)
     print("message_list: " + str(message_list))
-
     json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
-    print ("json_string: " + json_string)
-    print (type(json_string))
-
+    #print ("json_string: " + json_string)
+    #print (type(json_string))
     with open(messagesDataFile, "w") as outFile:
         outFile.write(json_string)
+    outFile.close()
+
+def print_json(m):
+    message_list = []
+    with open(messagesDataFile, "r") as inFile:
+        try:
+            message_list = json.load(inFile)
+        except ValueError:
+            print("empty file")
+            return
+    inFile.close()
+    json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
+    splits = string_splitter(json_string,2000)
+    for s in splits:
+        tb.send_message(m.chat.id, s)
+
+def delete_json(m):
+    open(messagesDataFile, "w").close()
 
 def execute_commands(m):
     text = m.text
-    if (text.startswith("/stats")):
-        tb.send_message(m.chat.id, "Updating stats")
-        with open(messagesDataFile, "w") as outfile:
-            json.dump(m, outfile, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
+    if (text.startswith("/print_json")):
+        print_json(m)
+    if (text.startswith("/delete_json")):
+        delete_json(m)
+    if (text.startswith("print_stats")):
+        pass
 
 def listener(messages):
     """
@@ -69,11 +76,10 @@ def listener(messages):
     for m in messages:
         chatid = m.chat.id
         if m.content_type == 'text':
-            text = m.text
-            execute_commands(m)
-            tb.reply_to(m, "I am replying to you message")
-            print_message_stats(m)
             collect_message(m)
+            execute_commands(m)
+            print_message_stats(m)
+            tb.reply_to(m, "I am replying to your message")
         else:
             tb.reply_to(m, "Only text messages are supported")
 
