@@ -8,7 +8,11 @@ import json
 config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN = config['Telegram']['token']
-messagesDataFile = "messagesData"
+
+#create json file if not existent
+def start_chat(m):
+    f = open(str(m.chat.id)+".json", 'w+')
+    f.close()
 
 def print_message_stats(m):
     print ("###################################")
@@ -28,24 +32,24 @@ def string_splitter(line, chars_in_each_line):
 
 def collect_message(m):
     message_list = []
-    with open(messagesDataFile, "r") as inFile:
+    with open(str(m.chat.id)+".json", "r") as inFile:
         try:
             message_list = json.load(inFile)
         except ValueError:
             meessage_list = []
     inFile.close()
     message_list.append(m)
-    print("message_list: " + str(message_list))
+    #print("message_list: " + str(message_list))
     json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
     #print ("json_string: " + json_string)
     #print (type(json_string))
-    with open(messagesDataFile, "w") as outFile:
+    with open(str(m.chat.id)+".json", "w") as outFile:
         outFile.write(json_string)
     outFile.close()
 
 def print_json(m):
     message_list = []
-    with open(messagesDataFile, "r") as inFile:
+    with open(str(m.chat.id)+".json", "r") as inFile:
         try:
             message_list = json.load(inFile)
         except ValueError:
@@ -59,11 +63,11 @@ def print_json(m):
         tb.send_message(m.chat.id, s)
 
 def delete_json(m):
-    open(messagesDataFile, "w").close()
+    open(str(m.chat.id)+".json", "w").close()
 
 def print_stats(m):
     message_list = []
-    with open(messagesDataFile, "r") as inFile:
+    with open(str(m.chat.id)+".json", "r") as inFile:
         try:
             message_list = json.load(inFile)
         except ValueError:
@@ -78,7 +82,6 @@ def print_stats(m):
     oldest_time = time.time() # unix time now
 
     for message in message_list:
-        print ("    " + str(message))
         user_id = message['from_user']['id']
         user_dict[user_id] = message['from_user']
         if (user_id in user_message_counter):
@@ -105,6 +108,8 @@ def unixtime_to_readable_string(unixtime):
 
 def execute_commands(m):
     text = m.text
+    if (text.startswith("/start")):
+        start_chat(m)
     if (text.startswith("/print_json")):
         print_json(m)
     if (text.startswith("/delete_json")):
@@ -119,8 +124,8 @@ def listener(messages):
     for m in messages:
         chatid = m.chat.id
         if m.content_type == 'text':
-            collect_message(m)
             execute_commands(m)
+            collect_message(m)
             print_message_stats(m)
         else:
             tb.reply_to(m, "Only text messages are supported")
