@@ -1,6 +1,6 @@
 # SubjectBot
 
-This Bot is reading the chat messages and recognizes the subject people were talking about.
+This Bot is reading the chat messages and analyzes the text for specific infrmation (NER).
 Note: The Bot needs to have access to messages.
 
 Dependencies:
