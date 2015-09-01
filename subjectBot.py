@@ -134,10 +134,9 @@ def listener(messages):
 
 def greetings(chatid):
     tb.send_message(chatid, "Ich wurde gestartet")
-    os.path.isfile("extIP")
-    ipadress = subprocess.check_output(['./extIP.sh'])
-    tb.send_message(chatid, "Ich laufe unter folgender IP: {}".format(ipadress))
-    #subprocess.call(['./extIP.sh'])
+    if (os.path.isfile("int-ip")):
+        ipadress = subprocess.check_output(['./int-ip'])
+        tb.send_message(chatid, "Ich laufe unter folgender IP: {}".format(ipadress))
 
 tb = telebot.TeleBot(TOKEN)
 tb.set_update_listener(listener) #register listener
