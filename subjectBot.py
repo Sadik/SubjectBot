@@ -11,8 +11,30 @@ config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN = config['Telegram']['token']
 
+chat_running = True
+
 #create json file if not existent
 def start_chat(m):
+    global chat_running
+    if (chat_running):
+        tb.send_message(m.chat.id, "Bot läuft bereits")
+    else:
+        chat_running = True
+        tb.send_message(m.chat.id, "Bot wurde gestartet")
+
+    # create file only if it doesn't exist
+    if (not os.path.isfile(str(m.chat.id)+".json")):
+        f = open(str(m.chat.id)+".json", 'w+')
+        f.close()
+
+def stop_chat(m):
+    global chat_running
+    chat_running = False
+    tb.send_message(m.chat.id, "Bot wurde pausiert")
+
+def delete_chat(m):
+    tb.send_message(m.chat.id, "Bot wurde gestoppt und chatlog gelöscht")
+    chat_running = False
     f = open(str(m.chat.id)+".json", 'w+')
     f.close()
 
@@ -77,7 +99,6 @@ def print_stats(m):
             tb.send_message(m.chat.id,"Keine Nachrichten gefunden")
             return
     inFile.close()
-    print ("message_list type: " + str(type(message_list)))
 
     user_message_counter = dict() # wil hold {user_id: message count}
     user_dict = dict() # will hold {}
@@ -109,14 +130,19 @@ def unixtime_to_readable_string(unixtime):
     return datetime.datetime.fromtimestamp(unixtime).strftime('%d.%m.%y, %H:%M Uhr')
 
 def execute_commands(m):
+    global chat_running
     text = m.text
     if (text.startswith("/start")):
         start_chat(m)
-    if (text.startswith("/print_json")):
+    if (text.startswith("/stop") and chat_running):
+        stop_chat(m)
+    if (text.startswith("/delete_chat") and chat_running):
+        delete_chat(m)
+    if (text.startswith("/print_json") and chat_running):
         print_json(m)
-    if (text.startswith("/delete_json")):
+    if (text.startswith("/delete_json") and chat_running):
         delete_json(m)
-    if (text.startswith("/print_stats" or text.startswith("/stats"))):
+    if (text.startswith("/print_stats" or text.startswith("/stats")) and chat_running):
         print_stats(m)
 
 def listener(messages):
@@ -149,3 +175,11 @@ tb.polling(none_stop=True)
 greetings("43871286")
 while True: # Don't let the main Thread end.
     pass
+
+#commands for BotFather:
+#start - startet den Bot
+#stop - stoppt den Bot
+#delete_chat - stoppt den Bot und löscht die chatlog
+#print_json - zeigt die komplette json-Datei
+#delete_json - löscht die komplette json-Datei
+#print_stats - zeigt allgemeine Statistik
