@@ -5,7 +5,7 @@ from telebot import types
 import json
 import os.path
 import subprocess
-from core import BotCommands
+from core import BotCommands, MessageFilter
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -30,6 +30,10 @@ def collect_message(m):
     with open(str(m.chat.id)+".json", "r") as inFile:
         try:
             message_list = json.load(inFile)
+        except FileNotFoundError:
+            if (not os.path.isfile(str(m.chat.id)+".json")):
+                f = open(str(m.chat.id)+".json", 'w+')
+                f.close()
         except ValueError:
             meessage_list = []
     inFile.close()
@@ -56,8 +60,13 @@ def listener(messages):
         else:
             tb.reply_to(m, "Only text messages are supported")
 
-    if answerText is not None:
+    if answerText is not None: #command was executed, send reply
         tb.send_message(m.chat.id, answerText)
+    else:
+        # start Filtering message for content
+        mFilter = MessageFilter.MessageFilter(m)
+        mFilter.analyze()
+
 
 def greetings(chatid):
     tb.send_message(chatid, "Ich wurde gestartet")

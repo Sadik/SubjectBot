@@ -5,6 +5,8 @@ import time, datetime
 chat_running = True
 
 def execute_commands(m):
+    """returns the answerText to subjectBot, where the Bot will give the text as reply, unless answerText is None.
+    i.e. answerText should remain None if it's not intended to give a reply"""
     global chat_running
     text = m.text
     answerText = None
@@ -20,18 +22,16 @@ def execute_commands(m):
         answerText = delete_json(m)
     if (text.startswith("/print_stats" or text.startswith("/stats")) and chat_running):
         answerText = print_stats(m)
-
+    
     return answerText
 
 #create json file if not existent
 def start_chat(m):
     global chat_running
     if (chat_running):
-        #tb.send_message(m.chat.id, "Bot läuft bereits")
         return "Bot läuft bereits"
     else:
         chat_running = True
-        #tb.send_message(m.chat.id, "Bot wurde gestartet")
         return "Bot wurde gestartet"
 
     # create file only if it doesn't exist
@@ -88,7 +88,7 @@ def print_stats(m):
             return
     inFile.close()
 
-    user_message_counter = dict() # wil hold {user_id: message count}
+    user_message_counter = dict() # will hold {user_id: message count}
     user_dict = dict() # will hold {}
     oldest_time = time.time() # unix time now
 
