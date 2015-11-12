@@ -50,30 +50,44 @@ class MessageFilter:
 		    ('fußball spielen', lambda tags: ('fußball', 'A') in tags)
 		]
 
-		train_sents = [
-		    [('ich', 'PC'), ('bin', 'PV'), ('dabei', 'None')],
-		    [('ich', 'None'), ('bin', 'None'), ('nicht', 'NV'), ('dabei', 'None')],
-		    [('bin', 'PV'), ('ich', 'PC'), ('dabei', 'None')],
-		    [('nicht','NV'), ('schlecht', 'NV')]
+		traindata = [
+			[('ich bin dabei', 'PV')],
+		    [('ich', 'test'), ('bin', 'None'), ('nicht', 'NV'), ('dabei', 'None')]
 		]
 
 		self.message = message
-		sent_tagger = nltk.tag.UnigramTagger(train_sents)
-		self.tagger = nltk.tag.UnigramTagger(model=self.model, backoff=sent_tagger)
+		#sent_tagger = nltk.tag.UnigramTagger(model=self.model)
+		#self.tagger = nltk.tag.TrigramTagger(traindata, backoff=sent_tagger)
 
-		evaluate(self.tagger, sentences)
+		t0 = nltk.DefaultTagger('None')
+		t1 = nltk.UnigramTagger(traindata, backoff=t0)
+		t2 = nltk.BigramTagger(traindata, backoff=t1)
+		t3 = nltk.TrigramTagger(traindata, backoff=t2)
+
+		self.tagger = t3
+
+		#evaluate(self.tagger, sentences)
 
 	def analyze(self):
 		print("analyzing text: " + self.message.text)
 		print("tokens: ")
 		print(tokenize(self.message.text))
 		tok_sents = tokenize(self.message.text)
+		print ("tok_sents:")
+		print (tok_sents)
 		
 		tagger = self.tagger
 		for tok_sent in tok_sents:
+			print ("trying to tag: ")
+			print (tok_sent)
 			tagged_sent = tagger.tag(tok_sent)
 			print("tagged:")
 			print(tagged_sent)
+
+	def analyze_message_stream(self, message_stream):
+		print ("############ Messages in Stream ############")
+		for message in message_stream:
+			print (message)
 
 
 

@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 import json
 import time, datetime
+import os
+import os.path
+
 
 chat_running = True
 

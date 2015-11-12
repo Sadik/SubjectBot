@@ -5,12 +5,11 @@ from telebot import types
 import json
 import os.path
 import subprocess
-from core import BotCommands, MessageFilter
+from core import BotCommands, MessageFilter, Helper
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 TOKEN = config['Telegram']['token']
-
 
 def print_message_stats(m):
     print ("###################################")
@@ -76,6 +75,10 @@ def listener(messages):
         # start Filtering message for content
         mFilter = MessageFilter.MessageFilter(m)
         mFilter.analyze()
+
+        users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
+        print ("users messages: " + str(len(users_messages)))
+        print (users_messages)
 
 
 def greetings(chatid):
