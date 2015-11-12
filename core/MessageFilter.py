@@ -9,6 +9,15 @@ def tokenize(text):
 		result.append(words)
 	return result
 
+def evaluate(tagger, sentences):
+    good,total = 0,0.
+    for sentence,func in sentences:
+        tags = tagger.tag(nltk.word_tokenize(sentence))
+        print ("tags")
+        print (tags)
+        good += func(tags)
+        total += 1
+    print ('Accuracy:',good/total)
 
 class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
@@ -19,18 +28,28 @@ class MessageFilter:
 		'handball':'A',
 		'joggen':'A',
 		'bolzen':'A',
+		'montag':'TS',
+		'dienstag':'TS',
+		'mittwoch':'TS',
+		'donnerstag':'TS',
+		'freitag':'TS',
+		'samstag':'TS',
+		'sonntag':'TS',
 		'nein':'NV',
 		'nicht': 'NV',
 		'schlecht': 'NV',
 		'ja':'PV',
 		'gut': 'PV'
 		}
-	#	training_sentences = [
-	#	    ('ich bin dabei', lambda tags: ('ich', 'PC') in tags),
-	#	    ('ich bin nicht dabei', lambda tags: ('nicht', 'NV') in tags),
-	#	    ('bin ich dabei', lambda tags: ('ich', 'PC') in tags),
-	#	    ('nicht schlecht', lambda tags: ('nicht', 'PV') in tags)
-	#	]
+		
+		sentences = [
+		    ('ich bin dabei', lambda tags: ('ich', 'PC') in tags),
+		    ('ich bin nicht dabei', lambda tags: ('nicht', 'NV') in tags),
+		    ('bin ich dabei', lambda tags: ('ich', 'PC') in tags),
+		    ('nicht schlecht', lambda tags: ('nicht', 'PV') in tags),
+		    ('fußball spielen', lambda tags: ('fußball', 'A') in tags)
+		]
+
 		train_sents = [
 		    [('ich', 'PC'), ('bin', 'PV'), ('dabei', 'None')],
 		    [('ich', 'None'), ('bin', 'None'), ('nicht', 'NV'), ('dabei', 'None')],
@@ -39,7 +58,10 @@ class MessageFilter:
 		]
 
 		self.message = message
-		self.tagger = nltk.tag.UnigramTagger(train_sents, model=self.model)
+		sent_tagger = nltk.tag.UnigramTagger(train_sents)
+		self.tagger = nltk.tag.UnigramTagger(model=self.model, backoff=sent_tagger)
+
+		evaluate(self.tagger, sentences)
 
 	def analyze(self):
 		print("analyzing text: " + self.message.text)

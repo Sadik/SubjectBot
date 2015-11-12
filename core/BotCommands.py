@@ -27,17 +27,17 @@ def execute_commands(m):
 
 #create json file if not existent
 def start_chat(m):
+    # create file only if it doesn't exist
+    if (not os.path.isfile(str(m.chat.id)+".json")):
+        f = open(str(m.chat.id)+".json", 'w+')
+        f.close()
+
     global chat_running
     if (chat_running):
         return "Bot läuft bereits"
     else:
         chat_running = True
         return "Bot wurde gestartet"
-
-    # create file only if it doesn't exist
-    if (not os.path.isfile(str(m.chat.id)+".json")):
-        f = open(str(m.chat.id)+".json", 'w+')
-        f.close()
 
 def stop_chat(m):
     global chat_running
@@ -73,6 +73,7 @@ def print_json(m):
 
 def delete_json(m):
     open(str(m.chat.id)+".json", "w").close()
+    return "chat log gelöscht."
 
 def unixtime_to_readable_string(unixtime):
     return datetime.datetime.fromtimestamp(unixtime).strftime('%d.%m.%y, %H:%M Uhr')
@@ -84,8 +85,7 @@ def print_stats(m):
             message_list = json.load(inFile)
         except ValueError:
             print("empty file")
-            tb.send_message(m.chat.id,"Keine Nachrichten gefunden")
-            return
+            return "Keine Nachrichten gefunden"
     inFile.close()
 
     user_message_counter = dict() # will hold {user_id: message count}
@@ -106,10 +106,10 @@ def print_stats(m):
     time_str = unixtime_to_readable_string(oldest_time)
     return "%d Nachrichten seit dem %s" % (len(message_list),time_str)
 
-    user_message_counter_string = ""
-    for key in user_message_counter:
-        first_name = user_dict[key]['first_name']
-        last_name = user_dict[key]['last_name']
-        count = user_message_counter[key]
-        user_message_counter_string += "%s %s: %s\n" % (first_name, last_name, count)
-    tb.send_message(m.chat.id, user_message_counter_string)
+   # user_message_counter_string = ""
+   # for key in user_message_counter:
+   #     first_name = user_dict[key]['first_name']
+   #     last_name = user_dict[key]['last_name']
+   #     count = user_message_counter[key]
+   #     user_message_counter_string += "%s %s: %s\n" % (first_name, last_name, count)
+   # tb.send_message(m.chat.id, user_message_counter_string)

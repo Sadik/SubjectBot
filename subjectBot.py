@@ -27,16 +27,25 @@ def jdefault(m):
 
 def collect_message(m):
     message_list = []
-    with open(str(m.chat.id)+".json", "r") as inFile:
+    try:
+        chatfile = open(str(m.chat.id)+".json", "r")
         try:
-            message_list = json.load(inFile)
-        except FileNotFoundError:
-            if (not os.path.isfile(str(m.chat.id)+".json")):
-                f = open(str(m.chat.id)+".json", 'w+')
-                f.close()
+            message_list = json.load(chatfile)
+       # except FileNotFoundError:
+        #    if (not os.path.isfile(str(m.chat.id)+".json")):
+        #        f = open(str(m.chat.id)+".json", 'w+')
+         #       f.close()
         except ValueError:
+            print ("ValueError occurred in 'collect_message' method")
             meessage_list = []
-    inFile.close()
+        finally:
+            chatfile.close()
+    except FileNotFoundError:
+        print ("FileNotFoundError occurred in 'collect_message' method")
+        if (not os.path.isfile(str(m.chat.id)+".json")):
+            f = open(str(m.chat.id)+".json", 'w+')
+            f.close()
+
     message_list.append(m)
     #print("message_list: " + str(message_list))
     json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
@@ -52,6 +61,7 @@ def listener(messages):
     """
     answerText = None
     for m in messages:
+        print("received message from " + str(m.chat.id))
         chatid = m.chat.id
         if m.content_type == 'text':
             answerText = BotCommands.execute_commands(m)
