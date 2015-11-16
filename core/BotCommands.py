@@ -25,6 +25,10 @@ def execute_commands(m):
         answerText = delete_json(m)
     if (text.startswith("/print_stats" or text.startswith("/stats")) and chat_running):
         answerText = print_stats(m)
+    if (text.startswith("/tags")):
+        answerText = show_tags(m)
+    if (text.startswith("/frame")):
+        answerText = show_frame(m)
     
     return answerText
 
@@ -46,6 +50,24 @@ def stop_chat(m):
     global chat_running
     chat_running = False
     return "Bot wurde pausiert"
+
+def show_tags(m):
+    return """
+    A - Action
+P - Place
+TS - Time Specification
+PC - Participant (Name)
+C - Cost
+NV - negative value
+PV - positive Value"""
+
+def show_frame(m):
+    return """
+Action: ACTION
+Ort: ORT
+Wann: DATUM, ZEIT Uhr
+Teilnehmer: [TEILNEHMER]
+Kosten: KOSTEN"""
 
 def delete_chat(m):
     chat_running = False

@@ -60,7 +60,7 @@ class MessageFilter:
 		#self.tagger = nltk.tag.TrigramTagger(traindata, backoff=sent_tagger)
 
 		t0 = nltk.DefaultTagger('None')
-		t1 = nltk.UnigramTagger(traindata, backoff=t0)
+		t1 = nltk.UnigramTagger(model=self.model, backoff=t0)
 		t2 = nltk.BigramTagger(traindata, backoff=t1)
 		t3 = nltk.TrigramTagger(traindata, backoff=t2)
 
@@ -69,20 +69,19 @@ class MessageFilter:
 		#evaluate(self.tagger, sentences)
 
 	def analyze(self):
-		print("analyzing text: " + self.message.text)
-		print("tokens: ")
-		print(tokenize(self.message.text))
+		#print("analyzing text: " + self.message.text)
 		tok_sents = tokenize(self.message.text)
-		print ("tok_sents:")
-		print (tok_sents)
-		
 		tagger = self.tagger
+		resulting_str = ""
 		for tok_sent in tok_sents:
-			print ("trying to tag: ")
-			print (tok_sent)
+			#print ("trying to tag: ")
+			#print (tok_sent)
 			tagged_sent = tagger.tag(tok_sent)
-			print("tagged:")
-			print(tagged_sent)
+			#print("tagged:")
+			#print(tagged_sent)
+			resulting_str += str(tagged_sent)
+
+		return resulting_str
 
 	def analyze_message_stream(self, message_stream):
 		print ("############ Messages in Stream ############")
