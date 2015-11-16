@@ -27,7 +27,7 @@ def jdefault(m):
 def collect_message(m):
     message_list = []
     try:
-        chatfile = open(str(m.chat.id)+".json", "rw+")
+        chatfile = open(str(m.chat.id)+".json", "w+")
         try:
             message_list = json.load(chatfile)
        # except FileNotFoundError:
@@ -39,8 +39,8 @@ def collect_message(m):
             meessage_list = []
         finally:
             chatfile.close()
-    except FileNotFoundError:
-        print ("FileNotFoundError occurred in 'collect_message' method")
+    except NameError:
+        print ("NameError occurred in 'collect_message' method")
         if (not os.path.isfile(str(m.chat.id)+".json")):
             f = open(str(m.chat.id)+".json", 'w+')
             f.close()
