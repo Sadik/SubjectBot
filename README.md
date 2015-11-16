@@ -3,9 +3,16 @@
 This Bot is reading the chat messages and analyzes the text for specific infrmation (NER).
 Note: The Bot needs to have access to messages.
 
-Dependencies:
+Install Dependencies:
     pyTelegramBotAPI (https://github.com/eternnoir/pyTelegramBotAPI)
-    pip install pyTelegramBotAPI
+    pip install -r pipdependencies
+
+download nltk stuff:
+    $ python
+    >>>import nltk
+    >>>nltk.download()
+
+    then chose to download 'all'
 
 Also:
 You need a file 'config.ini' in the same directory as the main file
