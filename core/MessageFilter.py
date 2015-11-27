@@ -1,5 +1,6 @@
 import nltk.tag, nltk.data
 from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
+import os
 
 def tokenize(text):
 	text = text.lower()
@@ -21,6 +22,10 @@ def evaluate(tagger, sentences):
 class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
 	def __init__(self, message):
+
+		print (os.getcwd())
+		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
+
 		self.model = {
 		'fußball': 'A',
 		'fussball':'A',
@@ -33,12 +38,7 @@ class MessageFilter:
 		'donnerstag':'TS',
 		'freitag':'TS',
 		'samstag':'TS',
-		'sonntag':'TS',
-		'nein':'NV',
-		'nicht': 'NV',
-		'schlecht': 'NV',
-		'ja':'PV',
-		'gut': 'PV'
+		'sonntag':'TS'
 		}
 		
 		sentences = [
@@ -70,6 +70,10 @@ class MessageFilter:
 	def analyze(self):
 		#print("analyzing text: " + self.message.text)
 		tok_sents = tokenize(self.message.text)
+		sentence_values = self.analyze_pos_neg(tok_sents)
+		print ("sentence values")
+		print (sentence_values)
+		
 		tagger = self.tagger
 		resulting_str = ""
 		for tok_sent in tok_sents:
@@ -81,6 +85,22 @@ class MessageFilter:
 			resulting_str += str(tagged_sent)
 
 		return resulting_str
+
+	def analyze_pos_neg(self, tok_sents):
+		""""tokenized sentences"""
+		print ("tokenized sentences:")
+		print (tok_sents)
+
+		pn_tagged_sents = [None] * len(tok_sents)
+		i = 0
+		for sent in tok_sents:
+			print (sent)
+			sentence_value = "PV"
+			if self.neg_list.intersection(sent):
+				sentence_value = "NV"
+			pn_tagged_sents[i] = sentence_value
+			i = i+1
+		return pn_tagged_sents
 
 	def analyze_message_stream(self, message_stream):
 		print ("############ Messages in Stream ############")
