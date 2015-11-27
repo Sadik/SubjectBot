@@ -3,7 +3,7 @@ import json
 import time, datetime
 import os
 import os.path
-
+import pickle
 
 chat_running = True
 
@@ -36,8 +36,24 @@ def execute_commands(m):
 def start_chat(m):
     # create file only if it doesn't exist
     if (not os.path.isfile(str(m.chat.id)+".json")):
-        f = open(str(m.chat.id)+".json", 'w+')
+        f = open(str(m.chat.id)+".json", 'x')
         f.close()
+
+    suggestions = None
+    try:
+        f = open(str(m.chat.id)+"_data", 'rb')
+        suggestions = pickle.loads(f.read())
+        print ("suggestions: ")
+        print (suggestions)
+    except FileNotFoundError:
+        open(str(m.chat.id)+"_data", 'x')
+        print ("file created: " + str(m.chat.id)+"_data")
+    except EOFError:
+        f = open(str(m.chat.id)+"_data", 'wb')
+        pickle.dump(suggestions, f)
+    except:
+        print("unknown error in start_chat")
+        raise
 
     global chat_running
     if (chat_running):

@@ -2,12 +2,11 @@ import nltk.tag, nltk.data
 from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
 
 def tokenize(text):
-	sents = sent_tokenize(text)
-	result = []
-	for s in sents:
-		words = [w.lower() for w in nltk.Text(wordpunct_tokenize(s)) if w.isalpha()]
-		result.append(words)
-	return result
+	text = text.lower()
+	sentences = sent_tokenize(text)
+	sentences = [nltk.Text(wordpunct_tokenize(sent)) for sent in sentences]
+
+	return sentences
 
 def evaluate(tagger, sentences):
     good,total = 0,0.
