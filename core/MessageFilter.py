@@ -25,69 +25,39 @@ class MessageFilter:
 
 		print (os.getcwd())
 		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
-
-		self.model = {
-		'fußball': 'A',
-		'fussball':'A',
-		'handball':'A',
-		'joggen':'A',
-		'bolzen':'A',
-		'montag':'TS',
-		'dienstag':'TS',
-		'mittwoch':'TS',
-		'donnerstag':'TS',
-		'freitag':'TS',
-		'samstag':'TS',
-		'sonntag':'TS'
-		}
-		
-		sentences = [
-		    ('ich bin dabei', lambda tags: ('ich', 'PC') in tags),
-		    ('ich bin nicht dabei', lambda tags: ('nicht', 'NV') in tags),
-		    ('bin ich dabei', lambda tags: ('ich', 'PC') in tags),
-		    ('nicht schlecht', lambda tags: ('nicht', 'PV') in tags),
-		    ('fußball spielen', lambda tags: ('fußball', 'A') in tags)
-		]
-
-		traindata = [
-			[('ich bin dabei', 'PV')],
-		    [('ich', 'test'), ('bin', 'None'), ('nicht', 'NV'), ('dabei', 'None')]
-		]
-
+		self.pos_list = set([line.strip() for line in open("./lists/pos_list", "r")])
+		self.action_list = set([line.strip() for line in open("./lists/action_list", "r")])
+		self.time_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
+		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
 		self.message = message
-		#sent_tagger = nltk.tag.UnigramTagger(model=self.model)
-		#self.tagger = nltk.tag.TrigramTagger(traindata, backoff=sent_tagger)
 
-		t0 = nltk.DefaultTagger('None')
-		t1 = nltk.UnigramTagger(model=self.model, backoff=t0)
-		t2 = nltk.BigramTagger(traindata, backoff=t1)
-		t3 = nltk.TrigramTagger(traindata, backoff=t2)
+	def isProbablyRelevant(self):
+		words = self.message.text.lower()
+		for word in words.split():
+			list_words = [l.lower() for l in self.time_expression_list | self.action_list | self.time_expression_list | self.human_name_list]
+			if word in list_words:
+				return True
 
-		self.tagger = t3
-
-		#evaluate(self.tagger, sentences)
+		return False
 
 	def analyze(self):
-		#print("analyzing text: " + self.message.text)
 		tok_sents = tokenize(self.message.text)
 		sentence_values = self.analyze_pos_neg(tok_sents)
 		print ("sentence values")
 		print (sentence_values)
-		
+
 		tagger = self.tagger
 		resulting_str = ""
 		for tok_sent in tok_sents:
-			#print ("trying to tag: ")
-			#print (tok_sent)
 			tagged_sent = tagger.tag(tok_sent)
-			#print("tagged:")
-			#print(tagged_sent)
 			resulting_str += str(tagged_sent)
 
 		return resulting_str
 
 	def analyze_pos_neg(self, tok_sents):
-		""""tokenized sentences"""
+		""""tokenized sentences. [[s0w0, s0w1,...],[s1w0, s1w1],...,[snw0,snw1,...]]
+		s: sentence
+		w: word """
 		print ("tokenized sentences:")
 		print (tok_sents)
 

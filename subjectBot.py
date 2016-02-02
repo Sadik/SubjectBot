@@ -74,12 +74,13 @@ def listener(messages):
     else:
         # start Filtering message for content
         mFilter = MessageFilter.MessageFilter(m)
-        result = mFilter.analyze()
+        #result = mFilter.analyze()
+        result = mFilter.isProbablyRelevant()
         tb.send_message(m.chat.id, result)
 
-        users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
-        print ("users messages: " + str(len(users_messages)))
-        print (users_messages)
+        #users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
+        #print ("users messages: " + str(len(users_messages)))
+        #print (users_messages)
 
 
 def greetings(chatid):
