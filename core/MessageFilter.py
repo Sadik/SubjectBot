@@ -1,6 +1,7 @@
 import nltk.tag, nltk.data
 from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
 import os
+import pickle
 
 def tokenize(text):
 	text = text.lower()
@@ -39,6 +40,34 @@ class MessageFilter:
 				return True
 
 		return False
+
+	def updateOrCreateEventFrame(self, message):
+		if (not os.path.isfile(str(message.chat.id)+"_frames")):
+			f = open(str(message.chat.id)+"_frames", 'wb')
+			f.close()
+
+		result = "Something was done"
+		print("looking for existing frames...")
+		try:
+			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
+			frame_list = pickle.loads(f.read())
+			if len(frame_list) == 0:
+				print ("empty frame list, creating new frame")
+				createFrame(message)
+		except EOFError:
+			frame_list = []
+			result = MessageFilter.createFrame(message)
+			print ("empty frame list, creating new frame")
+		except:
+			print("unknown error in start_chat")
+			raise
+
+		return result
+			
+	@staticmethod
+	def createFrame(message):
+		print ("creating a frame for this message: " + message.text)
+		return "Frame created."
 
 	def analyze(self):
 		tok_sents = tokenize(self.message.text)

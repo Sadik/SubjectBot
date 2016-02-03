@@ -39,7 +39,7 @@ def get_users_latest_messages(chatid, user_id):
 
 	return users_messages
 
-def one_text_from_meassage_stream(message_stream):
+def one_text_from_message_stream(message_stream):
 	message_text = ""
 	for m in message_stream:
 		message_text += m['text']

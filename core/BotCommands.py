@@ -39,12 +39,14 @@ def start_chat(m):
         f = open(str(m.chat.id)+".json", 'x')
         f.close()
 
+    if (not os.path.isfile(str(m.chat.id)+"_frames")):
+        f = open(str(m.chat.id)+"_frames", 'wb')
+        f.close()
+
     suggestions = None
     try:
-        f = open(str(m.chat.id)+"_data", 'rb')
+        f = open(str(m.chat.id)+"_frames", 'rb')
         suggestions = pickle.loads(f.read())
-        print ("suggestions: ")
-        print (suggestions)
     except FileNotFoundError:
         open(str(m.chat.id)+"_data", 'x')
         print ("file created: " + str(m.chat.id)+"_data")

@@ -46,10 +46,7 @@ def collect_message(m):
             f.close()
 
     message_list.append(m)
-    #print("message_list: " + str(message_list))
     json_string = json.dumps(message_list, default=jdefault, indent=4, sort_keys = True, ensure_ascii=False)
-    #print ("json_string: " + json_string)
-    #print (type(json_string))
     with open(str(m.chat.id)+".json", "w") as outFile:
         outFile.write(json_string)
     outFile.close()
@@ -74,9 +71,13 @@ def listener(messages):
     else:
         # start Filtering message for content
         mFilter = MessageFilter.MessageFilter(m)
-        #result = mFilter.analyze()
-        result = mFilter.isProbablyRelevant()
-        tb.send_message(m.chat.id, result)
+        if (mFilter.isProbablyRelevant()):
+            tb.send_message(m.chat.id, "Deine Nachricht ist vielleicht relevant.")
+            #TODO: Check if really relevant (analyze previous frames, previous messages)
+            result = mFilter.updateOrCreateEventFrame(m)
+            tb.send_message(m.chat.id, result)
+        else:
+            tb.send_message(m.chat.id, "Irrelevant")
 
         #users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
         #print ("users messages: " + str(len(users_messages)))
