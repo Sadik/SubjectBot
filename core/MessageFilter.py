@@ -30,14 +30,51 @@ class MessageFilter:
 		self.action_list = set([line.strip() for line in open("./lists/action_list", "r")])
 		self.time_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
 		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
+		self.location_list = set([line.strip() for line in open("./lists/location_list", "r")])
 		self.message = message
+
+		self.HUMAN_NAME = 0
+		self.TIME_EXP = 0
+		self.LOCATION = 0
+		self.ACTION = 0
+		self.POS = 0
+		self.NEG = 0
+
+	def showFlags(self):
+		flag_str = ""
+		if (self.HUMAN_NAME):
+			flag_str += "HUMAN NAME\n"
+		if (self.TIME_EXP):
+			flag_str += "TIME EXP\n"
+		if (self.LOCATION):
+			flag_str += "LOCATION\n"
+		if (self.ACTION):
+			flag_str += "ACTION\n"
+		if (self.POS):
+			flag_str += "POS\n"
+		if (self.NEG):
+			flag_str += "NEG\n"
+
+		return flag_str
 
 	def isProbablyRelevant(self):
 		words = self.message.text.lower()
 		for word in words.split():
-			list_words = [l.lower() for l in self.time_expression_list | self.action_list | self.time_expression_list | self.human_name_list]
-			if word in list_words:
-				return True
+			if word in [l.lower() for l in self.time_expression_list]:
+				self.TIME_EXP = 1
+			if word in [l.lower() for l in self.action_list]:
+				self.ACTION = 1
+			if word in [l.lower() for l in self.human_name_list]:
+				self.HUMAN_NAME = 1
+			if word in [l.lower() for l in self.location_list]:
+				self.LOCATION = 1
+			if word in [l.lower() for l in self.pos_list]:
+				self.POS = 1
+			if word in [l.lower() for l in self.neg_list]:
+				self.NEG = 1
+
+		if (self.HUMAN_NAME | self.TIME_EXP | self.LOCATION | self.ACTION):
+			return True
 
 		return False
 
@@ -51,12 +88,12 @@ class MessageFilter:
 		try:
 			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
 			frame_list = pickle.loads(f.read())
-			if len(frame_list) == 0:
+			if len(frame_list) == 0: #create first frame
 				print ("empty frame list, creating new frame")
-				createFrame(message)
-		except EOFError:
+				first_frame = MessageFilter.createFrame(message, 0)
+		except EOFError: #create first frame
 			frame_list = []
-			result = MessageFilter.createFrame(message)
+			first_frame = MessageFilter.createFrame(message, 0)
 			print ("empty frame list, creating new frame")
 		except:
 			print("unknown error in start_chat")
@@ -65,8 +102,9 @@ class MessageFilter:
 		return result
 			
 	@staticmethod
-	def createFrame(message):
+	def createFrame(message, id):
 		print ("creating a frame for this message: " + message.text)
+		frame = EventFrame.EventFrame(id)
 		return "Frame created."
 
 	def analyze(self):

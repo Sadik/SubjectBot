@@ -72,6 +72,7 @@ def listener(messages):
         # start Filtering message for content
         mFilter = MessageFilter.MessageFilter(m)
         if (mFilter.isProbablyRelevant()):
+            tb.send_message(m.chat.id, mFilter.showFlags())
             tb.send_message(m.chat.id, "Deine Nachricht ist vielleicht relevant.")
             #TODO: Check if really relevant (analyze previous frames, previous messages)
             result = mFilter.updateOrCreateEventFrame(m)
