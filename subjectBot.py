@@ -16,8 +16,8 @@ def print_message_stats(m):
     print("MessageID:     %s" % m.message_id)
     print("ChatID         %s" % m.chat.id)
     print("UserID         %s" % (m.from_user.id))
-    print("From:          %s %s" % (m.from_user.first_name
-    , m.from_user.last_name))
+    print("From:          %s %s (%s)" % (m.from_user.first_name
+    , m.from_user.last_name, m.from_user.username))
     print("Date (unix):   " + str(m.date))
     print("Text:          %s" % m.text)
 
@@ -78,7 +78,7 @@ def listener(messages):
             result = mFilter.updateOrCreateEventFrame(m)
             tb.send_message(m.chat.id, result)
         else:
-            tb.send_message(m.chat.id, "Irrelevant")
+            tb.send_message(m.chat.id, "irrelevant")
 
         #users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
         #print ("users messages: " + str(len(users_messages)))

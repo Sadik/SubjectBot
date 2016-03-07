@@ -86,8 +86,9 @@ class MessageFilter:
 			if word in [l.lower() for l in self.neg_list]:
 				self.NEG = 1
 
-		if (self.HUMAN_NAME | self.TIME_EXP | self.LOCATION | self.ACTION):
-			return True
+		if (self.TIME_EXP | self.LOCATION | self.ACTION):
+			if self.NEG == 0:
+				return True
 
 		return False
 
@@ -95,9 +96,14 @@ class MessageFilter:
 		return timestr
 
 	def resolveName(self, name):
-		if name.lower == "ich":
-			return ("%s %s, %s", self.message.from_user.first_name, self.message.from_user.last_name, self.message.from_user.username)
+		print ("resolving name: " + name)
+		if name.lower() == "ich":
+			print ("resolving ich")
+			result = "{0} {1} ({2})".format(self.message.from_user.first_name, self.message.from_user.last_name, self.message.from_user.username)
+			print ("result: " + result)
+			return result
 		else:
+			print (name + " is already a name")
 			return name
 
 	def updateOrCreateEventFrame(self, message):
@@ -111,36 +117,104 @@ class MessageFilter:
 		try:
 			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
 			frame_list = pickle.loads(f.read())
-			#if len(frame_list) == 0: #create first frame
-		#		print ("empty frame list. create new one?")
-	#			first_frame = self.createFrame(message, 0)
-	#			pickle.dump(first_frame, f)
-	#		else:
+			print("old frame list:")
+			print (len(frame_list)," frames exist!")
+			for frame in frame_list:
+				frame.summary()
+			print("----------------------------")
 
-			#still no EOFError? Then frame probably exists
-			#TODO: how many frames exist?
-			print ("frame exists!")
+			frameToUpdate = self.getFrameToUpdate(message, frame_list)
+			if frameToUpdate is None: #is None when no suitable frame was found
+				new_frame = self.createFrame(message)
+				frame_list.append(new_frame)
+				
+			else:
+				self.updateFrame(frameToUpdate)
+
+			print("new frame list:")
+			for frame in frame_list:
+				frame.summary()
+
+			pickle.dump(frame_list, f) #TODO: delete old frame and put new one in there
+			f.close()
+
+
 		except EOFError: #create first frame
 			frame_list = []
 			print ("empty frame list, creating new frame")
-			first_frame = self.createFrame(message, 0)
+			first_frame = self.createFrame(message)
 			frame_list.append(first_frame)
+
 			pickle.dump(frame_list, f)
 			
 		except:
 			print("unknown error in start_chat")
 			raise
 
+		f.close()
+
 		return result
 			
-	def createFrame(self, message, id):# first message and frame id
+	def createFrame(self, message):# first message and frame id
 		print ("creating a frame for this message: " + message.text)
-		frame = EventFrame.EventFrame(id)
+		frame = EventFrame.EventFrame()
 		frame.add_action(self.ACTION_str)
 		frame.add_location (self.LOCATION_str)
+		frame.add_date(self.TIME_EXP_str)
 		frame.add_time(self.TIME_EXP_str)
 		frame.add_participants(self.HUMAN_NAME_str)
 		return frame
+
+	def updateFrame(self, frame):
+		print("I have to update this frame:")
+		frame.summary()
+		if frame.what is None:
+			frame.add_action(self.ACTION_str)
+		if frame.where is None:
+			frame.add_location(self.LOCATION_str)
+		if frame.date is None:
+			frame.add_date(self.TIME_EXP_str)
+		if frame.time is None:
+			frame.add_time(self.TIME_EXP_str)
+		if self.HUMAN_NAME_str:
+			frame.add_participants(self.HUMAN_NAME_str)
+		print ("how is it now")
+		frame.summary()
+		return frame
+
+	def getFrameToUpdate(self, message, frame_list):
+		index_errors_dict = {}
+		for frame in frame_list:
+			errors = 0
+			if frame.what is not None and self.ACTION == 1:
+				if frame.what != self.ACTION_str:
+					print ("error from action")
+					errors += 1
+
+			if frame.where is not None and self.LOCATION == 1:
+				if frame.where != self.LOCATION_str:
+					print ("error from location")
+					errors += 1
+
+			if frame.date is not None and self.TIME_EXP == 1:
+				if frame.date != self.TIME_EXP_str:
+					print ("error from time exp")
+					errors += 1
+
+			if frame.time is not None and self.TIME_EXP == 1:
+				if frame.time != self.TIME_EXP_str:
+					print ("error from time exp2")
+					errors += 1
+
+			index_errors_dict[frame] = errors
+			print ("############## ", errors, " ##############")
+			frame.summary
+
+			if errors == 0:
+				return frame
+
+		return None #no suitable frame was found
+
 
 	def analyze(self):
 		tok_sents = tokenize(self.message.text)

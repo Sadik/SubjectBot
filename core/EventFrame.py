@@ -1,6 +1,6 @@
 class EventFrame:
 	"""Frame for an event"""
-	def __init__(self, id):
+	def __init__(self, id=0):
 		self.id = id
 		self.what = None
 		self.where = None
