@@ -6,7 +6,7 @@ class EventFrame:
 		self.where = None
 		self.date = None
 		self.time = None
-		self.participants = []
+		self.participants = {}
 		self.costs = None
 
 	def summary(self):
@@ -21,7 +21,27 @@ class EventFrame:
 			where = self.where,
 			date = self.date,
 			time = self.time,
-			participants = self.participants
+			participants = self.participants,
 			costs = self.costs)
+
 		print(summary_string)
 		return summary_string
+
+	def add_action(action):
+		self.what = action
+
+	def add_location(location):
+		self.where = location
+
+	def add_time(time):
+		self.time = time
+
+	def add_date(date):
+		self.date = date
+
+	def add_costs(costs):
+		self.costs = costs
+
+	def add_participants(human_name):
+		if (human_name not in self.participants):
+			self.participants.add(human_name)

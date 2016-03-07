@@ -2,6 +2,7 @@ import nltk.tag, nltk.data
 from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
 import os
 import pickle
+from core import EventFrame
 
 def tokenize(text):
 	text = text.lower()
@@ -24,6 +25,7 @@ class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
 	def __init__(self, message):
 
+		#prepare different lists
 		print (os.getcwd())
 		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
 		self.pos_list = set([line.strip() for line in open("./lists/pos_list", "r")])
@@ -33,12 +35,19 @@ class MessageFilter:
 		self.location_list = set([line.strip() for line in open("./lists/location_list", "r")])
 		self.message = message
 
+		#flag. if text message contains one of these, then flag is 1
 		self.HUMAN_NAME = 0
 		self.TIME_EXP = 0
 		self.LOCATION = 0
 		self.ACTION = 0
 		self.POS = 0
 		self.NEG = 0
+
+		#how it should be printed. Human name and time have to be resolved first
+		self.HUMAN_NAME_str = ""
+		self.TIME_EXP_str = ""
+		self.LOCATION_str = ""
+		self.ACTION_str = ""
 
 	def showFlags(self):
 		flag_str = ""
@@ -61,12 +70,16 @@ class MessageFilter:
 		words = self.message.text.lower()
 		for word in words.split():
 			if word in [l.lower() for l in self.time_expression_list]:
+				self.TIME_EXP_str = word
 				self.TIME_EXP = 1
 			if word in [l.lower() for l in self.action_list]:
+				self.ACTION_str = word
 				self.ACTION = 1
 			if word in [l.lower() for l in self.human_name_list]:
+				self.HUMAN_NAME_str = word
 				self.HUMAN_NAME = 1
 			if word in [l.lower() for l in self.location_list]:
+				self.LOCATION_str = word
 				self.LOCATION = 1
 			if word in [l.lower() for l in self.pos_list]:
 				self.POS = 1
@@ -77,6 +90,8 @@ class MessageFilter:
 			return True
 
 		return False
+
+
 
 	def updateOrCreateEventFrame(self, message):
 		if (not os.path.isfile(str(message.chat.id)+"_frames")):
@@ -89,7 +104,7 @@ class MessageFilter:
 			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
 			frame_list = pickle.loads(f.read())
 			if len(frame_list) == 0: #create first frame
-				print ("empty frame list, creating new frame")
+				print ("empty frame list. create new one?")
 				first_frame = MessageFilter.createFrame(message, 0)
 		except EOFError: #create first frame
 			frame_list = []
