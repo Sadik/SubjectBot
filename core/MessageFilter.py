@@ -70,13 +70,13 @@ class MessageFilter:
 		words = self.message.text.lower()
 		for word in words.split():
 			if word in [l.lower() for l in self.time_expression_list]:
-				self.TIME_EXP_str = word
+				self.TIME_EXP_str = self.resolveTime(word)
 				self.TIME_EXP = 1
 			if word in [l.lower() for l in self.action_list]:
 				self.ACTION_str = word
 				self.ACTION = 1
 			if word in [l.lower() for l in self.human_name_list]:
-				self.HUMAN_NAME_str = word
+				self.HUMAN_NAME_str = self.resolveName(word)
 				self.HUMAN_NAME = 1
 			if word in [l.lower() for l in self.location_list]:
 				self.LOCATION_str = word
@@ -91,9 +91,17 @@ class MessageFilter:
 
 		return False
 
+	def resolveTime(self, timestr):
+		return timestr
 
+	def resolveName(self, name):
+		if name.lower == "ich":
+			return ("%s %s, %s", self.message.from_user.first_name, self.message.from_user.last_name, self.message.from_user.username)
+		else:
+			return name
 
 	def updateOrCreateEventFrame(self, message):
+		#create file if not exist
 		if (not os.path.isfile(str(message.chat.id)+"_frames")):
 			f = open(str(message.chat.id)+"_frames", 'wb')
 			f.close()
@@ -103,24 +111,36 @@ class MessageFilter:
 		try:
 			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
 			frame_list = pickle.loads(f.read())
-			if len(frame_list) == 0: #create first frame
-				print ("empty frame list. create new one?")
-				first_frame = MessageFilter.createFrame(message, 0)
+			#if len(frame_list) == 0: #create first frame
+		#		print ("empty frame list. create new one?")
+	#			first_frame = self.createFrame(message, 0)
+	#			pickle.dump(first_frame, f)
+	#		else:
+
+			#still no EOFError? Then frame probably exists
+			#TODO: how many frames exist?
+			print ("frame exists!")
 		except EOFError: #create first frame
 			frame_list = []
-			first_frame = MessageFilter.createFrame(message, 0)
 			print ("empty frame list, creating new frame")
+			first_frame = self.createFrame(message, 0)
+			frame_list.append(first_frame)
+			pickle.dump(frame_list, f)
+			
 		except:
 			print("unknown error in start_chat")
 			raise
 
 		return result
 			
-	@staticmethod
-	def createFrame(message, id):
+	def createFrame(self, message, id):# first message and frame id
 		print ("creating a frame for this message: " + message.text)
 		frame = EventFrame.EventFrame(id)
-		return "Frame created."
+		frame.add_action(self.ACTION_str)
+		frame.add_location (self.LOCATION_str)
+		frame.add_time(self.TIME_EXP_str)
+		frame.add_participants(self.HUMAN_NAME_str)
+		return frame
 
 	def analyze(self):
 		tok_sents = tokenize(self.message.text)
@@ -158,6 +178,8 @@ class MessageFilter:
 		print ("############ Messages in Stream ############")
 		for message in message_stream:
 			print (message)
+
+
 
 
 

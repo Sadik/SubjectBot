@@ -6,7 +6,7 @@ class EventFrame:
 		self.where = None
 		self.date = None
 		self.time = None
-		self.participants = {}
+		self.participants = set()
 		self.costs = None
 
 	def summary(self):
@@ -27,21 +27,21 @@ class EventFrame:
 		print(summary_string)
 		return summary_string
 
-	def add_action(action):
+	def add_action(self, action):#TODO: should print warning when action is not none
 		self.what = action
 
-	def add_location(location):
+	def add_location(self, location):
 		self.where = location
 
-	def add_time(time):
+	def add_time(self, time):
 		self.time = time
 
-	def add_date(date):
+	def add_date(self, date):
 		self.date = date
 
-	def add_costs(costs):
+	def add_costs(self, costs):
 		self.costs = costs
 
-	def add_participants(human_name):
+	def add_participants(self, human_name):
 		if (human_name not in self.participants):
-			self.participants.add(human_name)
+			self.participants = self.participants | {human_name}
