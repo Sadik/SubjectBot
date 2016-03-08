@@ -74,7 +74,11 @@ def listener(messages):
         if (mFilter.isProbablyRelevant()):
             tb.send_message(m.chat.id, "Deine Nachricht ist vielleicht relevant.")
             tb.send_message(m.chat.id, mFilter.showFlags())
-            #TODO: Check if really relevant (analyze previous frames, previous messages)
+            result = mFilter.updateOrCreateEventFrame(m)
+            tb.send_message(m.chat.id, result)
+        elif (mFilter.isContextRelevant()):
+            tb.send_message(m.chat.id, "Deine Nachricht ist im Kontext relevant.")
+            tb.send_message(m.chat.id, mFilter.showFlags())
             result = mFilter.updateOrCreateEventFrame(m)
             tb.send_message(m.chat.id, result)
         else:

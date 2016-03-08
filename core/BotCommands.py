@@ -4,6 +4,7 @@ import time, datetime
 import os
 import os.path
 import pickle
+from core import EventFrame
 
 chat_running = True
 
@@ -27,8 +28,8 @@ def execute_commands(m):
         answerText = print_stats(m)
     if (text.startswith("/tags")):
         answerText = show_tags(m)
-    if (text.startswith("/frame")):
-        answerText = show_frame(m)
+    if (text.startswith("/frames")):
+        answerText = show_frames(m)
     
     return answerText
 
@@ -79,13 +80,19 @@ C - Cost
 NV - negative value
 PV - positive Value"""
 
-def show_frame(m):
-    return """
-Action: ACTION
-Ort: ORT
-Wann: DATUM, ZEIT Uhr
-Teilnehmer: [TEILNEHMER]
-Kosten: KOSTEN"""
+def show_frames(m):
+    f = open(str(m.chat.id)+"_frames", 'rb')
+    frame_list = []
+    while 1:
+            try:
+                frame_list.append (pickle.load(f))
+                frame_list = sum(frame_list, [])
+            except EOFError:
+                break
+            except:
+                print("unknown error in start_chat")
+                raise
+    return EventFrame.EventFrame.readable_frame_list(frame_list)
 
 def delete_chat(m):
     chat_running = False

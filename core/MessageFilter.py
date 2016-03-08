@@ -2,7 +2,7 @@ import nltk.tag, nltk.data
 from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
 import os
 import pickle
-from core import EventFrame
+from core import EventFrame, Helper
 
 def tokenize(text):
 	text = text.lower()
@@ -24,6 +24,7 @@ def evaluate(tagger, sentences):
 class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
 	def __init__(self, message):
+		self.message = message
 
 		#prepare different lists
 		print (os.getcwd())
@@ -33,7 +34,6 @@ class MessageFilter:
 		self.time_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
 		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
 		self.location_list = set([line.strip() for line in open("./lists/location_list", "r")])
-		self.message = message
 
 		#flag. if text message contains one of these, then flag is 1
 		self.HUMAN_NAME = 0
@@ -66,7 +66,45 @@ class MessageFilter:
 
 		return flag_str
 
-	def isProbablyRelevant(self):
+	def isProbablyRelevant(self, words=None):
+		if words is None:
+			words = self.message.text.lower()
+
+		for word in words.split():
+			if word in [l.lower() for l in self.time_expression_list]:
+				self.TIME_EXP_str = self.resolveTime(word)
+				self.TIME_EXP = 1
+			if word in [l.lower() for l in self.action_list]:
+				self.ACTION_str = word
+				self.ACTION = 1
+			if word in [l.lower() for l in self.human_name_list]:
+				self.HUMAN_NAME_str = self.resolveName(word)
+				self.HUMAN_NAME = 1
+			if word in [l.lower() for l in self.location_list]:
+				self.LOCATION_str = word
+				self.LOCATION = 1
+			if word in [l.lower() for l in self.pos_list]:
+				self.POS = 1
+			if word in [l.lower() for l in self.neg_list]:
+				self.NEG = 1
+
+		if (self.TIME_EXP | self.LOCATION | self.ACTION):
+			if self.NEG == 0:
+				return True
+
+		return False
+
+	def isContextRelevant(self, n=1):
+		if n == 4:
+			return False
+
+		context_text = Helper.one_text_from_message_stream(Helper.get_latest_n_messages(self.message.chat.id, self.message.from_user.id, n))
+
+		if self.isProbablyRelevant(context_text):
+			return True
+		else:
+			return self.isContextRelevant(n+1)
+
 		words = self.message.text.lower()
 		for word in words.split():
 			if word in [l.lower() for l in self.time_expression_list]:
@@ -96,62 +134,74 @@ class MessageFilter:
 		return timestr
 
 	def resolveName(self, name):
-		print ("resolving name: " + name)
 		if name.lower() == "ich":
-			print ("resolving ich")
 			result = "{0} {1} ({2})".format(self.message.from_user.first_name, self.message.from_user.last_name, self.message.from_user.username)
-			print ("result: " + result)
 			return result
 		else:
-			print (name + " is already a name")
 			return name
 
-	def updateOrCreateEventFrame(self, message):
+	def readFrameList(self, message):
+		#read frames from file (pickle) and return list of frames
+
 		#create file if not exist
 		if (not os.path.isfile(str(message.chat.id)+"_frames")):
 			f = open(str(message.chat.id)+"_frames", 'wb')
 			f.close()
 
-		result = "Something was done"
+		frame_list = []
 		print("looking for existing frames...")
-		try:
-			f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
-			frame_list = pickle.loads(f.read())
-			print("old frame list:")
-			print (len(frame_list)," frames exist!")
-			for frame in frame_list:
-				frame.summary()
-			print("----------------------------")
+		f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
+		while 1:
+			try:
+				frame_list.append (pickle.load(f))
+				frame_list = sum(frame_list, [])
+			except EOFError:
+				break
+			except:
+				print("unknown error in start_chat")
+				raise
 
+		f.close()
+		return frame_list
+
+	def writeFrameList(self, message, frame_list):
+		#writes frame_list into file (pickle)
+
+		if (not os.path.isfile(str(message.chat.id)+"_frames")):
+			f = open(str(message.chat.id)+"_frames", 'wb')
+			f.close()
+
+		f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
+		pickle.dump(frame_list, f)
+		f.close()
+
+	def checkFrameList(self, frame_list):
+		print ("################## frame list check #####################")
+		print ("type: ", type(frame_list))
+		print ("len:  ", len(frame_list))
+		print (frame_list)
+		for frame in frame_list:
+			frame.summary()
+
+	def updateOrCreateEventFrame(self, message):
+		result = "Something was done"
+		frame_list = self.readFrameList(message)
+
+		if len(frame_list) > 0:
 			frameToUpdate = self.getFrameToUpdate(message, frame_list)
 			if frameToUpdate is None: #is None when no suitable frame was found
 				new_frame = self.createFrame(message)
 				frame_list.append(new_frame)
-				
+				result = new_frame.summary()
 			else:
-				self.updateFrame(frameToUpdate)
+				new_frame = self.updateFrame(frameToUpdate)
+				result = new_frame.summary()
+		else:
+			new_frame = self.createFrame(message)
+			frame_list.append(new_frame)
+			result = new_frame.summary()
 
-			print("new frame list:")
-			for frame in frame_list:
-				frame.summary()
-
-			pickle.dump(frame_list, f) #TODO: delete old frame and put new one in there
-			f.close()
-
-
-		except EOFError: #create first frame
-			frame_list = []
-			print ("empty frame list, creating new frame")
-			first_frame = self.createFrame(message)
-			frame_list.append(first_frame)
-
-			pickle.dump(frame_list, f)
-			
-		except:
-			print("unknown error in start_chat")
-			raise
-
-		f.close()
+		self.writeFrameList(message, frame_list)
 
 		return result
 			
@@ -168,13 +218,13 @@ class MessageFilter:
 	def updateFrame(self, frame):
 		print("I have to update this frame:")
 		frame.summary()
-		if frame.what is None:
+		if frame.what is None or frame.what == "":
 			frame.add_action(self.ACTION_str)
-		if frame.where is None:
+		if frame.where is None or frame.where == "":
 			frame.add_location(self.LOCATION_str)
-		if frame.date is None:
+		if frame.date is None or frame.date == "":
 			frame.add_date(self.TIME_EXP_str)
-		if frame.time is None:
+		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
 		if self.HUMAN_NAME_str:
 			frame.add_participants(self.HUMAN_NAME_str)
@@ -185,30 +235,29 @@ class MessageFilter:
 	def getFrameToUpdate(self, message, frame_list):
 		index_errors_dict = {}
 		for frame in frame_list:
+			print ("----------------- update check ----------------")
 			errors = 0
-			if frame.what is not None and self.ACTION == 1:
+			if (frame.what is not None and frame.what != "") and self.ACTION == 1:
 				if frame.what != self.ACTION_str:
 					print ("error from action")
 					errors += 1
 
-			if frame.where is not None and self.LOCATION == 1:
+			if (frame.where is not None and frame.where != "") and self.LOCATION == 1:
 				if frame.where != self.LOCATION_str:
 					print ("error from location")
 					errors += 1
 
-			if frame.date is not None and self.TIME_EXP == 1:
+			if (frame.date is not None and frame.date != "") and self.TIME_EXP == 1:
 				if frame.date != self.TIME_EXP_str:
 					print ("error from time exp")
 					errors += 1
 
-			if frame.time is not None and self.TIME_EXP == 1:
+			if (frame.time is not None and frame.time != "") and self.TIME_EXP == 1:
 				if frame.time != self.TIME_EXP_str:
 					print ("error from time exp2")
 					errors += 1
 
-			index_errors_dict[frame] = errors
-			print ("############## ", errors, " ##############")
-			frame.summary
+			print ("----------------- errors: ", errors, " ----------------")
 
 			if errors == 0:
 				return frame

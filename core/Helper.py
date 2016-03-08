@@ -14,10 +14,27 @@ def get_message_stream(chatid):
 
 	return message_list
 
+def get_messages(chatid):
+	"""return all messages from a certain user"""
+	return [m for m in get_message_stream(chatid)]
+
 def get_messages_of_user(chatid, user_id):
 	"""return all messages from a certain user"""
 	return [m for m in get_message_stream(chatid) if user_id == m['from_user']['id']]
 
+def get_users_latest_n_messages(chatid, user_id, n=1):
+	"""return last n messages from a certain user"""
+	all_messages = get_messages_of_user(chatid, user_id)
+	print (n)
+	print (all_messages[-n:])
+	return all_messages[-n:]
+
+def get_latest_n_messages(chatid, user_id, n=1):
+	"""return last n messages """
+	all_messages = get_messages(chatid)
+	print (n)
+	print (all_messages[-n:])
+	return all_messages[-n:]
 
 def get_latest_messages(chatid, minutes):
 	"""return all messages from the last time, specified in minutes"""
@@ -40,9 +57,9 @@ def get_users_latest_messages(chatid, user_id):
 	return users_messages
 
 def one_text_from_message_stream(message_stream):
+	#return one text from message stream
 	message_text = ""
 	for m in message_stream:
-		message_text += m['text']
+		message_text += m['text'] + " "
 
 	return message_text
-

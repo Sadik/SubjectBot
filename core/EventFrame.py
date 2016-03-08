@@ -10,12 +10,7 @@ class EventFrame:
 		self.costs = None
 
 	def summary(self):
-		template = """
-		Action: {action}
-		Ort: {where}
-		Wann: {date}, {time} Uhr
-		Teilnehmer: {participants}
-		Kosten: {costs}"""
+		template = """Action: {action}\nOrt: {where}\nWann: {date}, {time} Uhr\nTeilnehmer: {participants}\nKosten: {costs}\n"""
 		summary_string = template.format(
 			action = self.what,
 			where = self.where,
@@ -45,3 +40,11 @@ class EventFrame:
 	def add_participants(self, human_name):
 		if (human_name not in self.participants):
 			self.participants = self.participants | {human_name}
+
+	@staticmethod
+	def readable_frame_list(frame_list):
+		text = ""
+		for frame in frame_list:
+			text += frame.summary() + "\n"
+
+		return text
