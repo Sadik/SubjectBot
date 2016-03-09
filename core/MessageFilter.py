@@ -89,8 +89,7 @@ class MessageFilter:
 				self.NEG = 1
 
 		if (self.TIME_EXP | self.LOCATION | self.ACTION):
-			if self.NEG == 0:
-				return True
+			return True
 
 		return False
 
@@ -105,30 +104,6 @@ class MessageFilter:
 		else:
 			return self.isContextRelevant(n+1)
 
-		words = self.message.text.lower()
-		for word in words.split():
-			if word in [l.lower() for l in self.time_expression_list]:
-				self.TIME_EXP_str = self.resolveTime(word)
-				self.TIME_EXP = 1
-			if word in [l.lower() for l in self.action_list]:
-				self.ACTION_str = word
-				self.ACTION = 1
-			if word in [l.lower() for l in self.human_name_list]:
-				self.HUMAN_NAME_str = self.resolveName(word)
-				self.HUMAN_NAME = 1
-			if word in [l.lower() for l in self.location_list]:
-				self.LOCATION_str = word
-				self.LOCATION = 1
-			if word in [l.lower() for l in self.pos_list]:
-				self.POS = 1
-			if word in [l.lower() for l in self.neg_list]:
-				self.NEG = 1
-
-		if (self.TIME_EXP | self.LOCATION | self.ACTION):
-			if self.NEG == 0:
-				return True
-
-		return False
 
 	def resolveTime(self, timestr):
 		return timestr
@@ -157,6 +132,12 @@ class MessageFilter:
 				frame_list = sum(frame_list, [])
 			except EOFError:
 				break
+			except UnicodeDecodeError:
+				print("UnicodeDecodeError!")
+				print ("[WARNING]")
+				print (EventFrame.EventFrame.readable_frame_list(frame_list))
+				print ("[END OF WARNING]")
+				return ("Warnung: Die Operation war nicht erfolgreich.")
 			except:
 				print("unknown error in start_chat")
 				raise
@@ -195,7 +176,17 @@ class MessageFilter:
 				result = new_frame.summary()
 			else:
 				new_frame = self.updateFrame(frameToUpdate)
-				result = new_frame.summary()
+				if new_frame is not None:
+					result = new_frame.summary()
+				else: #None: frame was deleted, probably no participants anymore
+					result = "alter Vorschlag gelöscht, da keine Teilnehmer"
+					#remove frameToUpdate from frame_list
+
+					print ("I actually have to remove this frame....")
+					frame_list.remove(frameToUpdate)
+					f = open(str(message.chat.id)+"_frames", 'w+')
+					f.close() #TODO: deleting the file is only workaround to avoid pickle error
+					print("frame list länge: ", len(frame_list))
 		else:
 			new_frame = self.createFrame(message)
 			frame_list.append(new_frame)
@@ -226,10 +217,15 @@ class MessageFilter:
 			frame.add_date(self.TIME_EXP_str)
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
-		if self.HUMAN_NAME_str:
+		if self.HUMAN_NAME_str and self.NEG == 0:
 			frame.add_participants(self.HUMAN_NAME_str)
+		elif self.HUMAN_NAME_str and self.NEG == 1:
+			frame.remove_participants(self.HUMAN_NAME_str)
 		print ("how is it now")
 		frame.summary()
+		if len(frame.participants) == 0:
+			del frame
+			return None
 		return frame
 
 	def getFrameToUpdate(self, message, frame_list):

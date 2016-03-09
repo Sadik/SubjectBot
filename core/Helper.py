@@ -25,15 +25,11 @@ def get_messages_of_user(chatid, user_id):
 def get_users_latest_n_messages(chatid, user_id, n=1):
 	"""return last n messages from a certain user"""
 	all_messages = get_messages_of_user(chatid, user_id)
-	print (n)
-	print (all_messages[-n:])
 	return all_messages[-n:]
 
 def get_latest_n_messages(chatid, user_id, n=1):
 	"""return last n messages """
 	all_messages = get_messages(chatid)
-	print (n)
-	print (all_messages[-n:])
 	return all_messages[-n:]
 
 def get_latest_messages(chatid, minutes):

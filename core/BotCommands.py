@@ -81,18 +81,38 @@ NV - negative value
 PV - positive Value"""
 
 def show_frames(m):
-    f = open(str(m.chat.id)+"_frames", 'rb')
+#create file if not exist
+    if (not os.path.isfile(str(m.chat.id)+"_frames")):
+        f = open(str(m.chat.id)+"_frames", 'wb')
+        f.close()
+
     frame_list = []
+    f = open(str(m.chat.id)+"_frames", "r+b") #read and write binary mode
+
     while 1:
-            try:
-                frame_list.append (pickle.load(f))
-                frame_list = sum(frame_list, [])
-            except EOFError:
-                break
-            except:
-                print("unknown error in start_chat")
-                raise
-    return EventFrame.EventFrame.readable_frame_list(frame_list)
+        try:
+            frame_list.append (pickle.load(f))
+            frame_list = sum(frame_list, [])
+        except EOFError:
+            break
+        except UnicodeDecodeError:
+            print("UnicodeDecodeError!")
+            print ("[WARNING]")
+            print (EventFrame.EventFrame.readable_frame_list(frame_list))
+            print ("[END OF WARNING]")
+            return ("Warnung: Die Operation war nicht erfolgreich.")
+        except:
+            print("unknown error in start_chat")
+            raise
+
+    f.close()
+
+    if len(frame_list) <= 0:
+        return "Kein Vorschlag vorhanden"
+    elif len(frame_list) == 1:
+        return "1 Vorschlag gefunden.\n\n{0}".format(EventFrame.EventFrame.readable_frame_list(frame_list))
+    else:
+        return "{0} Vorschläge gefunden.\n\n{1}".format(len(frame_list), EventFrame.EventFrame.readable_frame_list(frame_list))
 
 def delete_chat(m):
     chat_running = False

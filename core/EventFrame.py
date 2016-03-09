@@ -41,6 +41,10 @@ class EventFrame:
 		if (human_name not in self.participants):
 			self.participants = self.participants | {human_name}
 
+	def remove_participants(self, human_name):
+		if (human_name in self.participants):
+			self.participants.remove(human_name)
+
 	@staticmethod
 	def readable_frame_list(frame_list):
 		text = ""
@@ -48,3 +52,4 @@ class EventFrame:
 			text += frame.summary() + "\n"
 
 		return text
+
