@@ -32,7 +32,7 @@ class MessageFilter:
 		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
 		self.pos_list = set([line.strip() for line in open("./lists/pos_list", "r")])
 		self.action_list = set([line.strip() for line in open("./lists/action_list", "r")])
-		self.date_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
+		self.date_expression_list = set([line.strip() for line in open("./lists/date_expression_list", "r")])
 		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
 		self.location_list = set([line.strip() for line in open("./lists/location_list", "r")])
 
@@ -93,13 +93,19 @@ class MessageFilter:
 		for k,v in bigrams_list:
 			if k.strip().isdigit() and v.strip().lower() == "uhr":
 				self.TIME_EXP_str = k
+				print ("i take k: ", k)
 				return True
 			elif k.strip().lower() == "um" and v.strip().isdigit():
+				print ("i take v: ", v)
 				self.TIME_EXP_str = v
 				return True
 		return False
 
 	def isProbablyRelevant(self, words=None):
+		# TODO
+		# return 0 for not relevant
+		# 1 for contextual relevant#
+		# 2 for relevant
 		if words is None:
 			words = self.message.text.lower()
 
@@ -107,6 +113,8 @@ class MessageFilter:
 			self.TIME_EXP = 1
 		for word in words.split():
 			if word in [l.lower() for l in self.date_expression_list]:
+				print("isProbablyRelevant->date_expression_list")
+				print("word is: ", word)
 				self.DATE_EXP_str = self.resolveTime(word)
 				self.DATE_EXP = 1
 			if word in [l.lower() for l in self.action_list]:
@@ -259,7 +267,6 @@ class MessageFilter:
 		print ("how is it now")
 		frame.summary()
 		if len(frame.participants) == 0:
-			del frame
 			return None
 		return frame
 
