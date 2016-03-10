@@ -1,6 +1,10 @@
-nltk==3.0.4
-py==1.4.30
-pyTelegramBotAPI==0.3.1
+nltk==3.2
+py==1.4.31
+pyTelegramBotAPI==1.4.2
+pyenchant==1.6.6
 pygermanet==1.0.1
-pytest==2.7.2
-requests==2.7.0
+pymongo==3.2.1
+pytest==2.9.0
+repoze.lru==0.6
+requests==2.9.1
+six==1.10.0
