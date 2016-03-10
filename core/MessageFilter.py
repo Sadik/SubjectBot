@@ -1,7 +1,8 @@
 import nltk.tag, nltk.data
-from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize
+from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize, bigrams
 import os
 import pickle
+import time
 from core import EventFrame, Helper
 
 def tokenize(text):
@@ -31,12 +32,13 @@ class MessageFilter:
 		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
 		self.pos_list = set([line.strip() for line in open("./lists/pos_list", "r")])
 		self.action_list = set([line.strip() for line in open("./lists/action_list", "r")])
-		self.time_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
+		self.date_expression_list = set([line.strip() for line in open("./lists/time_expression_list", "r")])
 		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
 		self.location_list = set([line.strip() for line in open("./lists/location_list", "r")])
 
 		#flag. if text message contains one of these, then flag is 1
 		self.HUMAN_NAME = 0
+		self.DATE_EXP = 0
 		self.TIME_EXP = 0
 		self.LOCATION = 0
 		self.ACTION = 0
@@ -45,6 +47,7 @@ class MessageFilter:
 
 		#how it should be printed. Human name and time have to be resolved first
 		self.HUMAN_NAME_str = ""
+		self.DATE_EXP_str = ""
 		self.TIME_EXP_str = ""
 		self.LOCATION_str = ""
 		self.ACTION_str = ""
@@ -66,14 +69,46 @@ class MessageFilter:
 
 		return flag_str
 
+	def isTimeFormat(self, input):
+		try:
+			time.strptime(input, '%H:%M')
+			return True
+		except ValueError:
+			return False
+
+	def containsTimeExp(self, words=None):
+		if words is None:
+			words = self.message.text.lower()
+
+		print ("####### TIME EXP??? ############### ")
+		for word in words.split():
+			if self.isTimeFormat(word):
+				print ("contains time format: ", word)
+				self.TIME_EXP_str = word
+				return True
+
+		print ("checking bigrams")
+		bigrams_list = list(bigrams(words.split()))
+		print ("bigrams: ", bigrams_list)
+		for k,v in bigrams_list:
+			if k.strip().isdigit() and v.strip().lower() == "uhr":
+				self.TIME_EXP_str = k
+				return True
+			elif k.strip().lower() == "um" and v.strip().isdigit():
+				self.TIME_EXP_str = v
+				return True
+		return False
+
 	def isProbablyRelevant(self, words=None):
 		if words is None:
 			words = self.message.text.lower()
 
+		if self.containsTimeExp(words):
+			self.TIME_EXP = 1
 		for word in words.split():
-			if word in [l.lower() for l in self.time_expression_list]:
-				self.TIME_EXP_str = self.resolveTime(word)
-				self.TIME_EXP = 1
+			if word in [l.lower() for l in self.date_expression_list]:
+				self.DATE_EXP_str = self.resolveTime(word)
+				self.DATE_EXP = 1
 			if word in [l.lower() for l in self.action_list]:
 				self.ACTION_str = word
 				self.ACTION = 1
@@ -88,13 +123,13 @@ class MessageFilter:
 			if word in [l.lower() for l in self.neg_list]:
 				self.NEG = 1
 
-		if (self.TIME_EXP | self.LOCATION | self.ACTION):
+		if (self.DATE_EXP | self.TIME_EXP | self.LOCATION | self.ACTION):
 			return True
 
 		return False
 
 	def isContextRelevant(self, n=1):
-		if n == 4:
+		if n == 6: #searching to a maximum of n-1
 			return False
 
 		context_text = Helper.one_text_from_message_stream(Helper.get_latest_n_messages(self.message.chat.id, self.message.from_user.id, n))
@@ -201,7 +236,7 @@ class MessageFilter:
 		frame = EventFrame.EventFrame()
 		frame.add_action(self.ACTION_str)
 		frame.add_location (self.LOCATION_str)
-		frame.add_date(self.TIME_EXP_str)
+		frame.add_date(self.DATE_EXP_str)
 		frame.add_time(self.TIME_EXP_str)
 		frame.add_participants(self.HUMAN_NAME_str)
 		return frame
@@ -214,7 +249,7 @@ class MessageFilter:
 		if frame.where is None or frame.where == "":
 			frame.add_location(self.LOCATION_str)
 		if frame.date is None or frame.date == "":
-			frame.add_date(self.TIME_EXP_str)
+			frame.add_date(self.DATE_EXP_str)
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
 		if self.HUMAN_NAME_str and self.NEG == 0:
@@ -232,30 +267,30 @@ class MessageFilter:
 		index_errors_dict = {}
 		for frame in frame_list:
 			print ("----------------- update check ----------------")
-			errors = 0
+			offset = 0
 			if (frame.what is not None and frame.what != "") and self.ACTION == 1:
 				if frame.what != self.ACTION_str:
-					print ("error from action")
-					errors += 1
+					print ("offset from action")
+					offset += 1
 
 			if (frame.where is not None and frame.where != "") and self.LOCATION == 1:
 				if frame.where != self.LOCATION_str:
-					print ("error from location")
-					errors += 1
+					print ("offset from location")
+					offset += 1
 
-			if (frame.date is not None and frame.date != "") and self.TIME_EXP == 1:
-				if frame.date != self.TIME_EXP_str:
-					print ("error from time exp")
-					errors += 1
+			if (frame.date is not None and frame.date != "") and self.DATE_EXP == 1:
+				if frame.date != self.DATE_EXP_str:
+					print ("offset from date exp")
+					offset += 1
 
 			if (frame.time is not None and frame.time != "") and self.TIME_EXP == 1:
 				if frame.time != self.TIME_EXP_str:
-					print ("error from time exp2")
-					errors += 1
+					print ("offset from time exp")
+					offset += 1
 
-			print ("----------------- errors: ", errors, " ----------------")
+			print ("----------------- offset: ", offset, " ----------------")
 
-			if errors == 0:
+			if offset == 0:
 				return frame
 
 		return None #no suitable frame was found
