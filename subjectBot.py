@@ -16,10 +16,10 @@ def print_message_stats(m):
     print("MessageID:     %s" % m.message_id)
     print("ChatID         %s" % m.chat.id)
     print("UserID         %s" % (m.from_user.id))
-    print("From:          %s %s (%s)" % (m.from_user.first_name
-    , m.from_user.last_name, m.from_user.username))
+    print("From:          %s %s (%s)" % (m.from_user.first_name.encode('utf-8')
+    , m.from_user.last_name.encode('utf-8'), m.from_user.username.encode('utf-8')))
     print("Date (unix):   " + str(m.date))
-    print("Text:          %s" % m.text)
+    print("Text:          %s" % m.text.encode('utf-8'))
 
 def jdefault(m):
     return m.__dict__
