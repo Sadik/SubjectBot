@@ -16,10 +16,10 @@ def print_message_stats(m):
     print("MessageID:     %s" % m.message_id)
     print("ChatID         %s" % m.chat.id)
     print("UserID         %s" % (m.from_user.id))
-    print("From:          %s %s (%s)" % (m.from_user.first_name.encode('utf-8')
-    , m.from_user.last_name.encode('utf-8'), m.from_user.username.encode('utf-8')))
+    print("From:          %s %s (%s)" % (m.from_user.first_name
+    , m.from_user.last_name, m.from_user.username))
     print("Date (unix):   " + str(m.date))
-    print("Text:          %s" % m.text.encode('utf-8'))
+    print("Text:          %s" % m.text)
 
 def jdefault(m):
     return m.__dict__
@@ -30,10 +30,10 @@ def collect_message(m):
         chatfile = open(str(m.chat.id)+".json", "r")
         try:
             message_list = json.load(chatfile)
-       # except FileNotFoundError:
-        #    if (not os.path.isfile(str(m.chat.id)+".json")):
-        #        f = open(str(m.chat.id)+".json", 'w+')
-         #       f.close()
+        except FileNotFoundError:
+            if (not os.path.isfile(str(m.chat.id)+".json")):
+                f = open(str(m.chat.id)+".json", 'w+')
+                f.close()
         except ValueError:
             print ("ValueError occurred in 'collect_message' method")
             meessage_list = []

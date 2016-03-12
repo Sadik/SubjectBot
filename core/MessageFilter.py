@@ -301,15 +301,15 @@ class MessageFilter:
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
 		if self.HUMAN_NAME_str and self.NEG == 0:
-			print ("not negative!")
 			frame.add_participants(self.HUMAN_NAME_str)
 		elif self.HUMAN_NAME_str and self.NEG == 1:
-			print ("i know its negative!!! : ", self.HUMAN_NAME_str)
 			frame.remove_participants(self.HUMAN_NAME_str)
 		print ("how is it now")
 		frame.summary()
 		if len(frame.participants) == 0:
 			return None
+
+		print ("there are participants: ", frame.participants , " (", len(frame.participants) , ")")
 		return frame
 
 	def getFrameToUpdate(self, message, frame_list):
