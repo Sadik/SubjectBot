@@ -42,8 +42,11 @@ class EventFrame:
 		self.costs = costs
 
 	def add_participants(self, human_name):
+		#return 1 when name was added, otherwise 0
 		if (human_name not in self.participants):
 			self.participants = self.participants | {human_name}
+			return 1
+		return 0
 
 	def remove_participants(self, human_name):
 		if (human_name in self.participants):

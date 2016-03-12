@@ -96,11 +96,7 @@ class MessageFilter:
 				return True
 		return False
 
-	def isProbablyRelevant(self, words=None):
-		# TODO
-		# return 0 for not relevant
-		# 1 for contextual relevant#
-		# 2 for relevant
+	def NER(self, words=None):
 		if words is None:
 			words = self.message.text.lower()
 
@@ -122,24 +118,35 @@ class MessageFilter:
 			if word in [l.lower() for l in self.pos_list]:
 				self.POS = 1
 			if word in [l.lower() for l in self.neg_list]:
+				print ("i know its negative!!!")
 				self.NEG = 1
 
-		if (self.DATE_EXP | self.TIME_EXP | self.LOCATION | self.ACTION):
-			return True
+	def isProbablyRelevant(self, words=None):
+		# should only be called after NER() was called
+		# return 0 for not relevant
+		# 1 for contextual relevant#
+		# 2 for relevant
+		if (self.ACTION):
+			return 2
+		if (self.DATE_EXP + self.TIME_EXP >= 1) | self.LOCATION:
+			return 1
+		if (self.HUMAN_NAME + self.NEG + self.POS > 1):
+			return 1
 
-		return False
+		return 0
 
 	def isContextRelevant(self, n=1):
+		# should only be called after isProbablyRelevant() was called
 		if n == 6: #searching to a maximum of n-1
 			return False
 
 		context_text = Helper.one_text_from_message_stream(Helper.get_latest_n_messages(self.message.chat.id, self.message.from_user.id, n))
 
-		if self.isProbablyRelevant(context_text):
+		self.NER(context_text)
+		if self.isProbablyRelevant(context_text) == 2:
 			return True
 		else:
 			return self.isContextRelevant(n+1)
-
 
 	def resolveTime(self, timestr):
 		return timestr
@@ -162,11 +169,8 @@ class MessageFilter:
 			today = "donnerstag"
 		elif today == "friday":
 			today = "freitag"
-		
-		print ("today: ", today)
 
 		if datestr.lower() in week_list:
-			print ("found a week day")
 			try:
 				today_idx = week_list.index(today)
 				date_idx = week_list.index(datestr)
@@ -175,9 +179,7 @@ class MessageFilter:
 				return datestr
 
 			offset = (date_idx - today_idx) % 7
-			print ("offset: ", offset)
 			then_date = datetime.datetime.today() + datetime.timedelta(days=offset)
-			print ("then: ", then_date)
 			return "{0}, {1}.{2}".format(week_list[date_idx], then_date.day, then_date.month)
 
 		return datestr
@@ -242,15 +244,16 @@ class MessageFilter:
 			frame.summary()
 
 	def updateOrCreateEventFrame(self, message):
-		result = "Something was done"
+		result = "verstehe ... nicht"
 		frame_list = self.readFrameList(message)
 
 		if len(frame_list) > 0:
 			frameToUpdate = self.getFrameToUpdate(message, frame_list)
 			if frameToUpdate is None: #is None when no suitable frame was found
 				new_frame = self.createFrame(message)
-				frame_list.append(new_frame)
-				result = new_frame.summary()
+				if new_frame is not None:
+					frame_list.append(new_frame)
+					result = new_frame.summary()
 			else:
 				new_frame = self.updateFrame(frameToUpdate)
 				if new_frame is not None:
@@ -266,8 +269,9 @@ class MessageFilter:
 					print("frame list länge: ", len(frame_list))
 		else:
 			new_frame = self.createFrame(message)
-			frame_list.append(new_frame)
-			result = new_frame.summary()
+			if new_frame is not None:
+				frame_list.append(new_frame)
+				result = new_frame.summary()
 
 		self.writeFrameList(message, frame_list)
 
@@ -275,6 +279,8 @@ class MessageFilter:
 			
 	def createFrame(self, message):# first message and frame id
 		print ("creating a frame for this message: " + message.text)
+		if self.NEG > 0:
+			return None
 		frame = EventFrame.EventFrame()
 		frame.add_action(self.ACTION_str)
 		frame.add_location (self.LOCATION_str)
@@ -295,8 +301,10 @@ class MessageFilter:
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
 		if self.HUMAN_NAME_str and self.NEG == 0:
+			print ("not negative!")
 			frame.add_participants(self.HUMAN_NAME_str)
 		elif self.HUMAN_NAME_str and self.NEG == 1:
+			print ("i know its negative!!! : ", self.HUMAN_NAME_str)
 			frame.remove_participants(self.HUMAN_NAME_str)
 		print ("how is it now")
 		frame.summary()

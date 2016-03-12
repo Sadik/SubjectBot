@@ -71,18 +71,25 @@ def listener(messages):
     else:
         # start Filtering message for content
         mFilter = MessageFilter.MessageFilter(m)
-        if (mFilter.isProbablyRelevant()):
-            tb.send_message(m.chat.id, "Deine Nachricht ist vielleicht relevant.")
+        mFilter.NER()
+
+        relevance = mFilter.isProbablyRelevant()
+        if (relevance == 2):
+            #tb.send_message(m.chat.id, "Deine Nachricht ist wahrscheinlich relevant.")
+            print ("Deine Nachricht ist wahrscheinlich relevant.")
             #tb.send_message(m.chat.id, mFilter.showFlags())
             result = mFilter.updateOrCreateEventFrame(m)
             tb.send_message(m.chat.id, result)
-        elif (mFilter.isContextRelevant()):
-            tb.send_message(m.chat.id, "Deine Nachricht ist im Kontext relevant.")
-            #tb.send_message(m.chat.id, mFilter.showFlags())
-            result = mFilter.updateOrCreateEventFrame(m)
-            tb.send_message(m.chat.id, result)
+        elif (relevance == 1):
+            if (mFilter.isContextRelevant()):
+                #tb.send_message(m.chat.id, "Deine Nachricht ist im Kontext relevant.")
+                print ("Deine Nachricht ist im Kontext relevant.")
+                tb.send_message(m.chat.id, mFilter.showFlags())
+                result = mFilter.updateOrCreateEventFrame(m)
+                tb.send_message(m.chat.id, result)
         else:
-            tb.send_message(m.chat.id, "irrelevant")
+            #tb.send_message(m.chat.id, "irrelevant")
+            print ("irrelevant")
 
         #users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)
         #print ("users messages: " + str(len(users_messages)))
