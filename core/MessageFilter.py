@@ -4,6 +4,7 @@ import os
 import pickle
 import time
 from core import EventFrame, Helper
+import datetime
 
 def tokenize(text):
 	text = text.lower()
@@ -80,23 +81,17 @@ class MessageFilter:
 		if words is None:
 			words = self.message.text.lower()
 
-		print ("####### TIME EXP??? ############### ")
 		for word in words.split():
 			if self.isTimeFormat(word):
-				print ("contains time format: ", word)
 				self.TIME_EXP_str = word
 				return True
 
-		print ("checking bigrams")
 		bigrams_list = list(bigrams(words.split()))
-		print ("bigrams: ", bigrams_list)
 		for k,v in bigrams_list:
 			if k.strip().isdigit() and v.strip().lower() == "uhr":
 				self.TIME_EXP_str = k
-				print ("i take k: ", k)
 				return True
 			elif k.strip().lower() == "um" and v.strip().isdigit():
-				print ("i take v: ", v)
 				self.TIME_EXP_str = v
 				return True
 		return False
@@ -113,9 +108,7 @@ class MessageFilter:
 			self.TIME_EXP = 1
 		for word in words.split():
 			if word in [l.lower() for l in self.date_expression_list]:
-				print("isProbablyRelevant->date_expression_list")
-				print("word is: ", word)
-				self.DATE_EXP_str = self.resolveTime(word)
+				self.DATE_EXP_str = self.resolveDate(word)
 				self.DATE_EXP = 1
 			if word in [l.lower() for l in self.action_list]:
 				self.ACTION_str = word
@@ -150,6 +143,47 @@ class MessageFilter:
 
 	def resolveTime(self, timestr):
 		return timestr
+
+	def resolveDate(self, datestr):
+		print ("resolving date ", datestr)
+		today = time.strftime("%A").lower()
+		week_list = ["montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag"]
+		if (today == "saturday"):
+			today = "samstag"
+		elif today == "sunday":
+			today = "sonntag"
+		elif today == "monday":
+			today = "montag"
+		elif today == "tuesday":
+			today = "dienstag"
+		elif today == "wednesday":
+			today = "mittwoch"
+		elif today == "thursday":
+			today = "donnerstag"
+		elif today == "friday":
+			today = "freitag"
+		
+		print ("today: ", today)
+
+		if datestr.lower() in week_list:
+			print ("found a week day")
+			try:
+				today_idx = week_list.index(today)
+				date_idx = week_list.index(datestr)
+			except ValueError:
+				print ("ValueError in resolveDate for ", datestr)
+				return datestr
+
+			offset = (date_idx - today_idx) % 7
+			print ("offset: ", offset)
+			then_date = datetime.datetime.today() + datetime.timedelta(days=offset)
+			print ("then: ", then_date)
+			return "{0}, {1}.{2}".format(week_list[date_idx], then_date.day, then_date.month)
+
+		return datestr
+
+
+
 
 	def resolveName(self, name):
 		if name.lower() == "ich":

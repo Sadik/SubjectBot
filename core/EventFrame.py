@@ -10,13 +10,17 @@ class EventFrame:
 		self.costs = None
 
 	def summary(self):
+		participants_str = ""
+		for p in self.participants:
+			participants_str += "           " + p + '\n'
+
 		template = """Action: {action}\nOrt: {where}\nTag: {date}\nUhrzeit: {time} Uhr\nTeilnehmer: {participants}\n"""
 		summary_string = template.format(
 			action = self.what,
 			where = self.where,
 			date = self.date,
 			time = self.time,
-			participants = self.participants
+			participants = participants_str
 		)
 
 		print(summary_string)
