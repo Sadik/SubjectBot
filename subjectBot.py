@@ -100,6 +100,7 @@ def greetings(chatid):
     tb.send_message(chatid, "Ich wurde gestartet")
     if (os.path.isfile("int-ip")):
         ipadress = subprocess.check_output(['./int-ip'])
+        print ("Ich laufe unter folgender IP: {}".format(ipadress))
         tb.send_message(chatid, "Ich laufe unter folgender IP: {}".format(ipadress))
 
 tb = telebot.TeleBot(TOKEN)
