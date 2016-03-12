@@ -37,6 +37,10 @@ def collect_message(m):
         except ValueError:
             print ("ValueError occurred in 'collect_message' method")
             meessage_list = []
+        except IOError:
+            if (not os.path.isfile(str(m.chat.id)+".json")):
+                f = open(str(m.chat.id)+".json", 'w+')
+                f.close()
         finally:
             chatfile.close()
     except NameError:
@@ -65,6 +69,7 @@ def listener(messages):
             print_message_stats(m)
         else:
             tb.reply_to(m, "Only text messages are supported")
+            return
 
     if answerText is not None: #command was executed, send reply
         tb.send_message(m.chat.id, answerText)
