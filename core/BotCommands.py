@@ -52,7 +52,7 @@ def execute_commands(m, admin_b=False):
 def start_chat(m):
     # create file only if it doesn't exist
     if (not os.path.isfile(str(m.chat.id)+".json")):
-        f = open(str(m.chat.id)+".json", 'x')
+        f = open(str(m.chat.id)+".json", 'w')
         f.close()
 
     if (not os.path.isfile(str(m.chat.id)+"_frames")):
