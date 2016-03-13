@@ -171,6 +171,11 @@ class MessageFilter:
 		elif today == "friday":
 			today = "freitag"
 
+		if datestr.lower() == "morgen":
+			tomorrow_date = datetime.datetime.today() + datetime.timedelta(days=1)
+			tomorrow_week_day = week_list[((week_list.index(today)+1) % 7)]
+			return "{0}, {1}.{2}".format(tomorrow_week_day, tomorrow_date.day, tomorrow_date.month)
+
 		if datestr.lower() in week_list:
 			try:
 				today_idx = week_list.index(today)
