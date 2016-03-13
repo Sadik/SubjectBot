@@ -231,6 +231,9 @@ class MessageFilter:
 		if (not os.path.isfile(str(message.chat.id)+"_frames")):
 			f = open(str(message.chat.id)+"_frames", 'wb')
 			f.close()
+		else:
+			f = open(str(message.chat.id)+"_frames", 'w+') #TODO: deleting the file is only workaround to avoid pickle error
+			f.close()
 
 		f = open(str(message.chat.id)+"_frames", "r+b") #read and write binary mode
 		pickle.dump(frame_list, f)
@@ -248,14 +251,14 @@ class MessageFilter:
 		result = "verstehe ... nicht"
 		frame_list = self.readFrameList(message)
 
-		if len(frame_list) > 0:
+		if len(frame_list) > 0: #frames already exist
 			frameToUpdate = self.getFrameToUpdate(message, frame_list)
 			if frameToUpdate is None: #is None when no suitable frame was found
 				new_frame = self.createFrame(message)
 				if new_frame is not None:
 					frame_list.append(new_frame)
 					result = new_frame.summary()
-			else:
+			else: # found a frame that is intended to be updated
 				new_frame = self.updateFrame(frameToUpdate)
 				if new_frame is not None:
 					result = new_frame.summary()
@@ -265,10 +268,8 @@ class MessageFilter:
 
 					print ("I actually have to remove this frame....")
 					frame_list.remove(frameToUpdate)
-					f = open(str(message.chat.id)+"_frames", 'w+')
-					f.close() #TODO: deleting the file is only workaround to avoid pickle error
 					print("frame list länge: ", len(frame_list))
-		else:
+		else: #no frame exist, create new one
 			new_frame = self.createFrame(message)
 			if new_frame is not None:
 				frame_list.append(new_frame)
