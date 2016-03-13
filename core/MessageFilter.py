@@ -133,7 +133,7 @@ class MessageFilter:
 		# return 0 for not relevant
 		# 1 for contextual relevant#
 		# 2 for relevant
-		if (self.ACTION):
+		if (self.ACTION + self.HUMAN_NAME > 1):
 			return 2
 		if (self.DATE_EXP + self.TIME_EXP >= 1) | self.LOCATION:
 			return 1

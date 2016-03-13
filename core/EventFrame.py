@@ -14,7 +14,7 @@ class EventFrame:
 		for p in self.participants:
 			participants_str += "           " + p + '\n'
 
-		template = """Action: {action}\nOrt: {where}\nTag: {date}\nUhrzeit: {time} Uhr\nTeilnehmer:\n {participants}\n"""
+		template = """Action: {action}\nOrt: {where}\nTag: {date}\nUhrzeit: {time} Uhr\nTeilnehmer:\n{participants}\n"""
 		summary_string = template.format(
 			action = self.what,
 			where = self.where,
