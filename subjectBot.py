@@ -74,6 +74,7 @@ def listener(messages):
             collect_message(m)
             print_message_stats(m)
         else:
+            print ("content type was: ", m.content_type)
             tb.reply_to(m, "Only text messages are supported")
             return
 
