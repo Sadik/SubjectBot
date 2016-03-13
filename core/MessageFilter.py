@@ -135,7 +135,9 @@ class MessageFilter:
 		# 2 for relevant
 		if (self.ACTION + self.HUMAN_NAME > 1):
 			return 2
-		if (self.DATE_EXP + self.TIME_EXP >= 1) | self.LOCATION:
+		if (self.DATE_EXP + self.TIME_EXP >= 1):
+			return 1
+		if self.LOCATION == 1:
 			return 1
 		if (self.HUMAN_NAME + self.NEG + self.POS > 1):
 			return 1
