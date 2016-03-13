@@ -5,6 +5,8 @@ import pickle
 import time
 from core import EventFrame, Helper
 import datetime
+import string
+import re
 
 def tokenize(text):
 	text = text.lower()
@@ -22,6 +24,10 @@ def evaluate(tagger, sentences):
         good += func(tags)
         total += 1
     print ('Accuracy:',good/total)
+
+def removeSpecialChars(word):
+	chars = re.escape(string.punctuation)
+	return re.sub(r'['+chars+']', '',word)
 
 class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
@@ -103,6 +109,7 @@ class MessageFilter:
 		if self.containsTimeExp(words):
 			self.TIME_EXP = 1
 		for word in words.split():
+			word = removeSpecialChars(word)
 			if word in [l.lower() for l in self.date_expression_list]:
 				self.DATE_EXP_str = self.resolveDate(word)
 				self.DATE_EXP = 1
