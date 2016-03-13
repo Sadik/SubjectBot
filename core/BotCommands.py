@@ -8,7 +8,7 @@ from core import EventFrame
 
 chat_running = True
 
-def execute_commands(m):
+def execute_commands(m, admin_b=False):
     """returns the answerText to subjectBot, where the Bot will give the text as reply, unless answerText is None.
     i.e. answerText should remain None if it's not intended to give a reply"""
     global chat_running
@@ -17,17 +17,32 @@ def execute_commands(m):
     if (text.startswith("/start")):
         answerText = start_chat(m)
     if (text.startswith("/stop") and chat_running):
-        answerText = stop_chat(m)
+        if admin_b:
+            answerText = stop_chat(m)
+        else:
+            return "das darf nur der Admin"
     if (text.startswith("/delete_chat") and chat_running):
-        answerText = delete_chat(m)
+        if admin_b:
+            answerText = delete_chat(m)
+        else:
+            return "das darf nur der Admin"
     if (text.startswith("/print_json") and chat_running):
-        answerText = print_json(m)
+        if admin_b:
+            answerText = print_json(m)
+        else:
+            return "das darf nur der Admin"
     if (text.startswith("/delete_json") and chat_running):
-        answerText = delete_json(m)
+        if admin_b:
+            answerText = delete_json(m)
+        else:
+            return "das darf nur der Admin"
     if (text.startswith("/print_stats" or text.startswith("/stats")) and chat_running):
         answerText = print_stats(m)
-    if (text.startswith("/tags")):
-        answerText = show_tags(m)
+    if (text.startswith("/tags") and admin_b):
+        if admin_b:
+            answerText = show_tags(m)
+        else:
+            return "das darf nur der Admin"
     if (text.startswith("/frames")):
         answerText = show_frames(m)
     

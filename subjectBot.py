@@ -67,7 +67,10 @@ def listener(messages):
         print("received message from " + str(m.chat.id))
         chatid = m.chat.id
         if m.content_type == 'text':
-            answerText = BotCommands.execute_commands(m)
+            admin_b = False
+            if (str(m.chat.id) == "43871286"):
+                admin_b = True
+            answerText = BotCommands.execute_commands(m, admin_b)
             collect_message(m)
             print_message_stats(m)
         else:
