@@ -141,6 +141,7 @@ class MessageFilter:
 			return False
 
 		context_text = Helper.one_text_from_message_stream(Helper.get_latest_n_messages(self.message.chat.id, self.message.from_user.id, n))
+		print ("testing context relevance of :", context_text)
 
 		self.NER(context_text)
 		if self.isProbablyRelevant(context_text) == 2:

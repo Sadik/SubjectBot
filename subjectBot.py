@@ -68,7 +68,7 @@ def listener(messages):
         chatid = m.chat.id
         if m.content_type == 'text':
             admin_b = False
-            if (str(m.chat.id) == "43871286"):
+            if (str(m.from_user.id) == "43871286"):
                 admin_b = True
             answerText = BotCommands.execute_commands(m, admin_b)
             collect_message(m)
@@ -95,7 +95,7 @@ def listener(messages):
             if (mFilter.isContextRelevant()):
                 #tb.send_message(m.chat.id, "Deine Nachricht ist im Kontext relevant.")
                 print ("Deine Nachricht ist im Kontext relevant.")
-                tb.send_message(m.chat.id, mFilter.showFlags())
+                #tb.send_message(m.chat.id, mFilter.showFlags())
                 result = mFilter.updateOrCreateEventFrame(m)
                 tb.send_message(m.chat.id, result)
         else:
