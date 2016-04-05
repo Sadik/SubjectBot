@@ -61,7 +61,7 @@ class MessageFilter:
 			flag_str += "ACTION\n"
 		if (self.POS):
 			flag_str += "POS\n"
-		if (self.PKNEG):
+		if (self.PTKNEG):
 			flag_str += "NEG\n"
 
 		return flag_str
@@ -173,7 +173,7 @@ class MessageFilter:
 				self.POS = 1
 			if word in [l.lower() for l in self.neg_list]:
 				#print ("i know its negative!!!")
-				self.PKNEG = 1
+				self.PTKNEG = 1
 
 	def isProbablyRelevant2(self, pos_list):
 		# should only be called after NER() was called
@@ -189,7 +189,7 @@ class MessageFilter:
 			return 1
 		if "LOC" in tags:
 			return 1
-		if "HN" in tags and "PKNEG" in tags:
+		if "HN" in tags and "PTKNEG" in tags:
 			return 1
 
 		return 0
@@ -208,7 +208,7 @@ class MessageFilter:
 			return 1
 		#if (self.HUMAN_NAME + self.PAV > 1):
 		#	return 1
-		if (self.HUMAN_NAME + self.PKNEG + self.POS > 1):
+		if (self.HUMAN_NAME + self.PTKNEG + self.POS > 1):
 			return 1
 
 		return 0
@@ -364,7 +364,7 @@ class MessageFilter:
 			
 	def createFrame(self, message):# first message and frame id
 		print ("creating a frame for this message: " + message.text)
-		if self.PKNEG > 0:
+		if self.PTKNEG > 0:
 			return None
 		frame = EventFrame.EventFrame()
 		frame.add_action(self.ACTION_str)
@@ -385,9 +385,9 @@ class MessageFilter:
 			frame.add_date(self.DATE_EXP_str)
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
-		if self.HUMAN_NAME_str and self.PKNEG == 0:
+		if self.HUMAN_NAME_str and self.PTKNEG == 0:
 			frame.add_participants(self.HUMAN_NAME_str)
-		elif self.HUMAN_NAME_str and self.PKNEG == 1:
+		elif self.HUMAN_NAME_str and self.PTKNEG == 1:
 			frame.remove_participants(self.HUMAN_NAME_str)
 		print ("frame updated:")
 		frame.summary()

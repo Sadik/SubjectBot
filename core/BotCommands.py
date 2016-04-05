@@ -43,7 +43,7 @@ def execute_commands(m, admin_b=False):
             answerText = show_tags(m)
         else:
             return "das darf nur der Admin"
-    if (text.startswith("/frames")):
+    if (text.startswith("/frames") or text.startswith("/frame")):
         answerText = show_frames(m)
     
     return answerText
@@ -96,7 +96,7 @@ NV - negative value
 PV - positive Value"""
 
 def show_frames(m):
-#create file if not exist
+    #create file if not exist
     if (not os.path.isfile(str(m.chat.id)+"_frames")):
         f = open(str(m.chat.id)+"_frames", 'wb')
         f.close()
