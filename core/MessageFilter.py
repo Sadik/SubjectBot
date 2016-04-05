@@ -3,7 +3,7 @@ from nltk import wordpunct_tokenize, word_tokenize, sent_tokenize, bigrams
 import os
 import pickle
 import time
-from core import EventFrame, Helper
+from core import EventFrame, Helper, Parser
 import datetime
 import string
 import re
@@ -15,16 +15,6 @@ def tokenize(text):
 
 	return sentences
 
-def evaluate(tagger, sentences):
-    good,total = 0,0.
-    for sentence,func in sentences:
-        tags = tagger.tag(nltk.word_tokenize(sentence))
-        print ("tags")
-        print (tags)
-        good += func(tags)
-        total += 1
-    print ('Accuracy:',good/total)
-
 def removeSpecialChars(word):
 	chars = re.escape(string.punctuation)
 	return re.sub(r'['+chars+']', '',word)
@@ -35,9 +25,9 @@ class MessageFilter:
 		self.message = message
 
 		#prepare different lists
-		print (os.getcwd())
+		#print (os.getcwd())
 		self.neg_list = set([line.strip() for line in open("./lists/neg_list", "r")])
-		self.pos_list = set([line.strip() for line in open("./lists/pos_list", "r")])
+		self.positive_list = set([line.strip() for line in open("./lists/positive_list", "r")])
 		self.action_list = set([line.strip() for line in open("./lists/action_list", "r")])
 		self.date_expression_list = set([line.strip() for line in open("./lists/date_expression_list", "r")])
 		self.human_name_list = set([line.strip() for line in open("./lists/human_name_list", "r")])
@@ -50,7 +40,7 @@ class MessageFilter:
 		self.LOCATION = 0
 		self.ACTION = 0
 		self.POS = 0
-		self.NEG = 0
+		self.PTKNEG = 0
 
 		#how it should be printed. Human name and time have to be resolved first
 		self.HUMAN_NAME_str = ""
@@ -71,7 +61,7 @@ class MessageFilter:
 			flag_str += "ACTION\n"
 		if (self.POS):
 			flag_str += "POS\n"
-		if (self.NEG):
+		if (self.PKNEG):
 			flag_str += "NEG\n"
 
 		return flag_str
@@ -102,7 +92,64 @@ class MessageFilter:
 				return True
 		return False
 
+	def getTimeExp(self, tag_list):
+		# expects tag_list [(word1, TAG2), (word2, TAG2), ... ]
+		# return updated tag_list
+		word_texp = None
+		for (w1, t1), (w2, t2) in list(bigrams(tag_list)):
+			if w1 == 'um' and t2 == "CARD":
+				word_texp = w2
+			elif t1 == "CARD" and w2 == "uhr":
+				word_texp = w1
+			self.TIME_EXP_str = word_texp
+
+		new_tag_list = []
+		for word, tag in tag_list:
+			new_tag = tag
+			if self.isTimeFormat(word) or word == word_texp:
+				self.TIME_EXP_str = word
+				new_tag = "TEXP" # Time Expression
+
+			new_tag_list.append((word, new_tag))
+
+		return new_tag_list
+
 	def NER(self, words=None):
+		# gets a sentence (or a few words)
+		# calls the Parser
+		# returns updated pos_tag_list
+		if words is None:
+			words = self.message.text.lower()
+
+		parser = Parser.Parser(words)
+		pos_list = parser.pos
+		#print(pos_list)
+		pos_list = self.getTimeExp(pos_list)
+
+		tag_list = []
+		for word, tag in pos_list:
+			new_tag = tag
+			if word in [l.lower() for l in self.date_expression_list]:
+				self.DATE_EXP_str = self.resolveDate(word)
+				new_tag = "DEXP" # Date Expression
+			elif word in [l.lower() for l in self.action_list]:
+				self.ACTION_str = word
+				new_tag = "ACTION"
+			elif(word == "ich"):
+				self.HUMAN_NAME_str = self.resolveName(word)
+				new_tag = "HN" # Human Name
+			elif word in [l.lower() for l in self.location_list]:
+				self.LOCATION_str = word
+				new_tag = "LOC"
+
+			tag_list.append((word, new_tag))
+
+		return tag_list
+
+
+
+	def NER2(self, words=None):
+
 		if words is None:
 			words = self.message.text.lower()
 
@@ -122,11 +169,31 @@ class MessageFilter:
 			if word in [l.lower() for l in self.location_list]:
 				self.LOCATION_str = word
 				self.LOCATION = 1
-			if word in [l.lower() for l in self.pos_list]:
+			if word in [l.lower() for l in self.positive_list]:
 				self.POS = 1
 			if word in [l.lower() for l in self.neg_list]:
-				print ("i know its negative!!!")
-				self.NEG = 1
+				#print ("i know its negative!!!")
+				self.PKNEG = 1
+
+	def isProbablyRelevant2(self, pos_list):
+		# should only be called after NER() was called
+		# expects tag_list [(word1, TAG2), (word2, TAG2), ... ]
+		# return 0 for not relevant
+		# 1 for contextual relevant#
+		# 2 for relevant
+		words = [e[0] for e in pos_list]
+		tags = [e[1] for e in pos_list]
+		if "ACTION" in tags and "HN" in tags:
+			return 2
+		if "DEXP" in tags or "TEXP" in tags:
+			return 1
+		if "LOC" in tags:
+			return 1
+		if "HN" in tags and "PKNEG" in tags:
+			return 1
+
+		return 0
+
 
 	def isProbablyRelevant(self, words=None):
 		# should only be called after NER() was called
@@ -139,7 +206,9 @@ class MessageFilter:
 			return 1
 		if self.LOCATION == 1:
 			return 1
-		if (self.HUMAN_NAME + self.NEG + self.POS > 1):
+		#if (self.HUMAN_NAME + self.PAV > 1):
+		#	return 1
+		if (self.HUMAN_NAME + self.PKNEG + self.POS > 1):
 			return 1
 
 		return 0
@@ -295,7 +364,7 @@ class MessageFilter:
 			
 	def createFrame(self, message):# first message and frame id
 		print ("creating a frame for this message: " + message.text)
-		if self.NEG > 0:
+		if self.PKNEG > 0:
 			return None
 		frame = EventFrame.EventFrame()
 		frame.add_action(self.ACTION_str)
@@ -316,16 +385,16 @@ class MessageFilter:
 			frame.add_date(self.DATE_EXP_str)
 		if frame.time is None or frame.time == "":
 			frame.add_time(self.TIME_EXP_str)
-		if self.HUMAN_NAME_str and self.NEG == 0:
+		if self.HUMAN_NAME_str and self.PKNEG == 0:
 			frame.add_participants(self.HUMAN_NAME_str)
-		elif self.HUMAN_NAME_str and self.NEG == 1:
+		elif self.HUMAN_NAME_str and self.PKNEG == 1:
 			frame.remove_participants(self.HUMAN_NAME_str)
-		print ("how is it now")
+		print ("frame updated:")
 		frame.summary()
 		if len(frame.participants) == 0:
 			return None
 
-		print ("there are participants: ", frame.participants , " (", len(frame.participants) , ")")
+		#print ("there are participants: ", frame.participants , " (", len(frame.participants) , ")")
 		return frame
 
 	def getFrameToUpdate(self, message, frame_list):
@@ -353,7 +422,7 @@ class MessageFilter:
 					print ("offset from time exp")
 					offset += 1
 
-			print ("----------------- offset: ", offset, " ----------------")
+			#print ("----------------- offset: ", offset, " ----------------")
 
 			if offset == 0:
 				return frame
@@ -364,8 +433,6 @@ class MessageFilter:
 	def analyze(self):
 		tok_sents = tokenize(self.message.text)
 		sentence_values = self.analyze_pos_neg(tok_sents)
-		print ("sentence values")
-		print (sentence_values)
 
 		tagger = self.tagger
 		resulting_str = ""
@@ -379,24 +446,16 @@ class MessageFilter:
 		""""tokenized sentences. [[s0w0, s0w1,...],[s1w0, s1w1],...,[snw0,snw1,...]]
 		s: sentence
 		w: word """
-		print ("tokenized sentences:")
-		print (tok_sents)
 
 		pn_tagged_sents = [None] * len(tok_sents)
 		i = 0
 		for sent in tok_sents:
-			print (sent)
 			sentence_value = "PV"
 			if self.neg_list.intersection(sent):
 				sentence_value = "NV"
 			pn_tagged_sents[i] = sentence_value
 			i = i+1
 		return pn_tagged_sents
-
-	def analyze_message_stream(self, message_stream):
-		print ("############ Messages in Stream ############")
-		for message in message_stream:
-			print (message)
 
 
 
