@@ -268,9 +268,6 @@ class MessageFilter:
 
 		return datestr
 
-
-
-
 	def resolveName(self, name):
 		if name.lower() == "ich":
 			result = "{0} {1} ({2})".format(self.message.from_user.first_name, self.message.from_user.last_name, self.message.from_user.username)
@@ -330,12 +327,12 @@ class MessageFilter:
 		for frame in frame_list:
 			frame.summary()
 
-	def updateOrCreateEventFrame(self, message):
+	def updateOrCreateEventFrame(self, message, tags):
 		result = "verstehe ... nicht"
 		frame_list = self.readFrameList(message)
 
 		if len(frame_list) > 0: #frames already exist
-			frameToUpdate = self.getFrameToUpdate(message, frame_list)
+			frameToUpdate = self.getFrameToUpdate(tags, frame_list)
 			if frameToUpdate is None: #is None when no suitable frame was found
 				new_frame = self.createFrame(message)
 				if new_frame is not None:
@@ -397,32 +394,40 @@ class MessageFilter:
 		#print ("there are participants: ", frame.participants , " (", len(frame.participants) , ")")
 		return frame
 
-	def getFrameToUpdate(self, message, frame_list):
+	def getFrameToUpdate(self, tags, frame_list):
+		# expects list of tags, list of frames
 		index_errors_dict = {}
 		for frame in frame_list:
 			print ("----------------- update check ----------------")
 			offset = 0
-			if (frame.what is not None and frame.what != "") and self.ACTION == 1:
+			print("tags:", tags)
+			print("frame.what:" , frame.what)
+			print(frame.what is not None)
+			print(frame.what != "")
+			print("ACTION" in tags)
+			if (frame.what is not None and frame.what != "") and "ACTION" in tags:
+				print("1. check true")
 				if frame.what != self.ACTION_str:
 					print ("offset from action")
 					offset += 1
-
-			if (frame.where is not None and frame.where != "") and self.LOCATION == 1:
+			else:
+				print ("1. check false")
+			if (frame.where is not None and frame.where != "") and "LOC" in tags:
 				if frame.where != self.LOCATION_str:
 					print ("offset from location")
 					offset += 1
 
-			if (frame.date is not None and frame.date != "") and self.DATE_EXP == 1:
+			if (frame.date is not None and frame.date != "") and "DEXP" in tags:
 				if frame.date != self.DATE_EXP_str:
 					print ("offset from date exp")
 					offset += 1
 
-			if (frame.time is not None and frame.time != "") and self.TIME_EXP == 1:
+			if (frame.time is not None and frame.time != "") and "TEXP" in tags:
 				if frame.time != self.TIME_EXP_str:
 					print ("offset from time exp")
 					offset += 1
 
-			#print ("----------------- offset: ", offset, " ----------------")
+			print ("----------------- offset: ", offset, " ----------------")
 
 			if offset == 0:
 				return frame

@@ -91,7 +91,8 @@ def listener(messages):
                 #tb.send_message(m.chat.id, "Deine Nachricht ist wahrscheinlich relevant.")
                 print ("Deine Nachricht ist wahrscheinlich relevant.")
                 #tb.send_message(m.chat.id, mFilter.showFlags())
-                result = mFilter.updateOrCreateEventFrame(m)
+                tags = [e[1] for e in pos_list]
+                result = mFilter.updateOrCreateEventFrame(m, tags)
                 tb.send_message(m.chat.id, result)
             elif (relevance == 1):
                 if (mFilter.isContextRelevant()):
