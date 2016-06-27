@@ -17,7 +17,17 @@ def tokenize(text):
 
 def removeSpecialChars(word):
 	chars = re.escape(string.punctuation)
-	return re.sub(r'['+chars+']', '',word)
+	if (isTimeFormat(word)):
+		return word
+	return re.sub(r'['+chars+']', '', word)
+
+def isTimeFormat(input):
+	#print ("isTimeFormat:",input)
+	try:
+		time.strptime(input, '%H:%M')
+		return True
+	except ValueError:
+		return False
 
 class MessageFilter:
 	"""This class filters messages for relevant content, based on a custom tagger"""
@@ -68,19 +78,12 @@ class MessageFilter:
 
 		return flag_str
 
-	def isTimeFormat(self, input):
-		try:
-			time.strptime(input, '%H:%M')
-			return True
-		except ValueError:
-			return False
-
 	def containsTimeExp(self, words=None):
 		if words is None:
 			words = self.message.text.lower()
 
 		for word in words.split():
-			if self.isTimeFormat(word):
+			if isTimeFormat(word):
 				self.TIME_EXP_str = word
 				return True
 
@@ -109,7 +112,7 @@ class MessageFilter:
 		new_tag_list = []
 		for word, tag in tag_list:
 			new_tag = tag
-			if self.isTimeFormat(word) or word == word_texp:
+			if isTimeFormat(word) or word == word_texp:
 				self.TIME_EXP_str = str(word)
 				new_tag = "TEXP" # Time Expression
 
@@ -125,17 +128,18 @@ class MessageFilter:
 		if words is None:
 			words = self.message.text
 		words = words.lower()
-		if tag_list is not None:
-			print ("len words:", len(words), "len tag_list:", len(tag_list))
-		print ("none?:", tag_list is None)
-		if tag_list is None or len(tag_list) != len(words):
-			tag_list = [(removeSpecialChars(word), 'None') for word in wordpunct_tokenize(words)]
 
-		print ("##########")
-		print ("NER words: ")
-		print (words)
-		print ("NER tag_list:")
-		print (tag_list)
+		tag_list=[]
+		if tag_list is None or len(tag_list) != len(words):
+			for word in words.split():
+				if isTimeFormat(word):
+					safeThis = word
+				else:
+					safeThis = removeSpecialChars(word)
+				tag_list.append((safeThis, "None"))
+
+		#if tag_list is None or len(tag_list) != len(words):
+		#	tag_list = [(removeSpecialChars(word), 'None') for word in wordpunct_tokenize(words)]
 
 		tag_list = self.getTimeExp(tag_list)
 		new_tag_list = []
@@ -159,14 +163,8 @@ class MessageFilter:
 
 			new_tag_list.append((word, new_tag))
 
-		print ("NER words: ")
-		print (words)
-		print ("NER new_tag_list:")
-		print (new_tag_list)
-		print ("--------------------")
 		self.latest_tags = [e[1] for e in new_tag_list]
 		return new_tag_list
-
 
 
 	def NER_old(self, words=None):
@@ -193,7 +191,6 @@ class MessageFilter:
 			if word in [l.lower() for l in self.positive_list]:
 				self.POS = 1
 			if word in [l.lower() for l in self.neg_list]:
-				#print ("i know its negative!!!")
 				self.PTKNEG = 1
 
 	def isProbablyRelevant(self, pos_list):
@@ -202,17 +199,13 @@ class MessageFilter:
 		# return 0 for not relevant
 		# 1 for contextual relevant#
 		# 2 for relevant
-		print ("isProbablyRelevant pos_list: ")
-		print (pos_list)
+
 		words = [e[0] for e in pos_list]
 		tags = [e[1] for e in pos_list]
-		print ("isProbablyRelevant tags:")
-		print (tags)
-		print ("TEXP in tags", "TEXP" in tags)
+
 		if "ACTION" in tags and "HN" in tags:
 			return 2
 		if "DEXP" in tags or "TEXP" in tags:
-			print ("returning 1")
 			return 1
 		if "LOC" in tags:
 			return 1
@@ -245,8 +238,6 @@ class MessageFilter:
 		print ("testing context relevance of :", context_text, n)
 
 		tag_list = self.NER(context_text)
-		print ("isContextRelevant tag_list:")
-		print(tag_list)
 		if self.isProbablyRelevant(tag_list) == 2:
 			return True
 		else:
@@ -429,18 +420,10 @@ class MessageFilter:
 		for frame in frame_list:
 			print ("----------------- update check ----------------")
 			offset = 0
-			print("tags:", tags)
-			print("frame.what:" , frame.what)
-			print(frame.what is not "None")
-			print(frame.what != "")
-			print("ACTION" in tags)
 			if (frame.what is not "None" and frame.what != "") and "ACTION" in tags:
-				print("1. check true")
 				if frame.what != self.ACTION_str:
 					print ("offset from action")
 					offset += 1
-			else:
-				print ("1. check false")
 			if (frame.where is not "None" and frame.where != "") and "LOC" in tags:
 				if frame.where != self.LOCATION_str:
 					print ("offset from location")
@@ -452,15 +435,11 @@ class MessageFilter:
 					offset += 1
 
 			if (frame.time is not "None" and frame.time != "") and "TEXP" in tags:
-				print ("frame.time:", frame.time, type(frame.time))
-				print("self.TIME_EXP_str", self.TIME_EXP_str, type(self.TIME_EXP_str))
-
 				if frame.time != self.TIME_EXP_str:
 					print ("offset from time exp")
 					offset += 1
 
 			print ("----------------- offset: ", offset, " ----------------")
-
 			if offset == 0:
 				return frame
 
