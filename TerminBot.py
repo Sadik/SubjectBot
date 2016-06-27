@@ -84,26 +84,34 @@ def listener(messages):
         else:
             # start Filtering message for content
             mFilter = MessageFilter.MessageFilter(m)
-            pos_list = mFilter.NER()
+            tag_list = mFilter.NER()
             #mFilter.NER()
 
-            relevance = mFilter.isProbablyRelevant2(pos_list)
+            relevance = mFilter.isProbablyRelevant(tag_list)
+            print ("relevance is ", relevance)
             if (relevance == 2):
-                #tb.send_message(m.chat.id, "Deine Nachricht ist wahrscheinlich relevant.")
-                print ("Deine Nachricht ist wahrscheinlich relevant.")
+                tb.send_message(m.chat.id, "relevant.")
+                print ("Deine Nachricht ist relevant.")
                 #tb.send_message(m.chat.id, mFilter.showFlags())
-                tags = [e[1] for e in pos_list]
+                tags = [e[1] for e in tag_list]
                 result = mFilter.updateOrCreateEventFrame(m, tags)
-                tb.send_message(m.chat.id, result)
-            elif (relevance == 1):
-                if (mFilter.isContextRelevant()):
-                    #tb.send_message(m.chat.id, "Deine Nachricht ist im Kontext relevant.")
-                    print ("Deine Nachricht ist im Kontext relevant.")
-                    #tb.send_message(m.chat.id, mFilter.showFlags())
-                    result = mFilter.updateOrCreateEventFrame(m)
+                if result != "None":
                     tb.send_message(m.chat.id, result)
+            elif (relevance == 1):
+                print ("testing context with ")
+                print (tag_list)
+                if (mFilter.isContextRelevant(tag_list)):
+                    result = mFilter.updateOrCreateEventFrame(m)
+                    tb.send_message(m.chat.id, "im Kontext relevant.")
+                    print ("Deine Nachricht ist im Kontext relevant.")
+                    print ("reply: ", result)
+                    if result != "None":
+                        tb.send_message(m.chat.id, result)
+                else:
+                    tb.send_message(m.chat.id, "irrelevant (c)")
+                    print ("irrelevant (c)")
             else:
-                #tb.send_message(m.chat.id, "irrelevant")
+                tb.send_message(m.chat.id, "irrelevant")
                 print ("irrelevant")
 
             #users_messages = Helper.get_users_latest_messages(m.chat.id, m.from_user.id)

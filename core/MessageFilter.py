@@ -49,14 +49,16 @@ class MessageFilter:
 		self.LOCATION_str = ""
 		self.ACTION_str = ""
 
+		self.latest_tags = []
+
 	def showFlags(self):
 		flag_str = ""
 		if (self.HUMAN_NAME):
-			flag_str += "HUMAN NAME\n"
+			flag_str += "HN\n"
 		if (self.TIME_EXP):
-			flag_str += "TIME EXP\n"
+			flag_str += "TEXP\n"
 		if (self.LOCATION):
-			flag_str += "LOCATION\n"
+			flag_str += "LOC\n"
 		if (self.ACTION):
 			flag_str += "ACTION\n"
 		if (self.POS):
@@ -95,39 +97,49 @@ class MessageFilter:
 	def getTimeExp(self, tag_list):
 		# expects tag_list [(word1, TAG2), (word2, TAG2), ... ]
 		# return updated tag_list
-		word_texp = None
+		word_texp = "None"
 		for (w1, t1), (w2, t2) in list(bigrams(tag_list)):
 			if w1 == 'um' and t2.strip().isdigit():
-				word_texp = w2
-			elif t1.strip().isdigit() and w2 == "uhr":
-				word_texp = w1
-			self.TIME_EXP_str = word_texp
+				word_texp = str(w2)
+				self.TIME_EXP_str = word_texp
+			elif w1.strip().isdigit() and w2 == "uhr":
+				word_texp = str(w1)
+				self.TIME_EXP_str = word_texp
 
 		new_tag_list = []
 		for word, tag in tag_list:
 			new_tag = tag
 			if self.isTimeFormat(word) or word == word_texp:
-				self.TIME_EXP_str = word
+				self.TIME_EXP_str = str(word)
 				new_tag = "TEXP" # Time Expression
 
 			new_tag_list.append((word, new_tag))
 
 		return new_tag_list
 
-	def NER(self, words=None):
+	def NER(self, words=None, tag_list=None):
 		# gets a sentence (or a few words)
 		# calls the Parser
 		# returns updated pos_tag_list
+
 		if words is None:
-			words = self.message.text.lower()
+			words = self.message.text
+		words = words.lower()
+		if tag_list is not None:
+			print ("len words:", len(words), "len tag_list:", len(tag_list))
+		print ("none?:", tag_list is None)
+		if tag_list is None or len(tag_list) != len(words):
+			tag_list = [(removeSpecialChars(word), 'None') for word in wordpunct_tokenize(words)]
 
-		parser = Parser.Parser(words)
-		pos_list = parser.pos
-		#print(pos_list)
-		pos_list = self.getTimeExp(pos_list)
+		print ("##########")
+		print ("NER words: ")
+		print (words)
+		print ("NER tag_list:")
+		print (tag_list)
 
-		tag_list = []
-		for word, tag in pos_list:
+		tag_list = self.getTimeExp(tag_list)
+		new_tag_list = []
+		for word, tag in tag_list:
 			new_tag = tag
 			if word in [l.lower() for l in self.date_expression_list]:
 				self.DATE_EXP_str = self.resolveDate(word)
@@ -141,14 +153,23 @@ class MessageFilter:
 			elif word in [l.lower() for l in self.location_list]:
 				self.LOCATION_str = word
 				new_tag = "LOC"
+			elif word in [l.lower() for l in self.neg_list]:
+				self.PTKNEG = 1
+				new_tag = "PTKNEG"
 
-			tag_list.append((word, new_tag))
+			new_tag_list.append((word, new_tag))
 
-		return tag_list
+		print ("NER words: ")
+		print (words)
+		print ("NER new_tag_list:")
+		print (new_tag_list)
+		print ("--------------------")
+		self.latest_tags = [e[1] for e in new_tag_list]
+		return new_tag_list
 
 
 
-	def NER2(self, words=None):
+	def NER_old(self, words=None):
 
 		if words is None:
 			words = self.message.text.lower()
@@ -175,27 +196,33 @@ class MessageFilter:
 				#print ("i know its negative!!!")
 				self.PTKNEG = 1
 
-	def isProbablyRelevant2(self, pos_list):
+	def isProbablyRelevant(self, pos_list):
 		# should only be called after NER() was called
 		# expects tag_list [(word1, TAG2), (word2, TAG2), ... ]
 		# return 0 for not relevant
 		# 1 for contextual relevant#
 		# 2 for relevant
+		print ("isProbablyRelevant pos_list: ")
+		print (pos_list)
 		words = [e[0] for e in pos_list]
 		tags = [e[1] for e in pos_list]
+		print ("isProbablyRelevant tags:")
+		print (tags)
+		print ("TEXP in tags", "TEXP" in tags)
 		if "ACTION" in tags and "HN" in tags:
 			return 2
 		if "DEXP" in tags or "TEXP" in tags:
+			print ("returning 1")
 			return 1
 		if "LOC" in tags:
 			return 1
-		if "HN" in tags and "PTKNEG" in tags:
+		if "HN" in tags or "PTKNEG" in tags:
 			return 1
 
 		return 0
 
 
-	def isProbablyRelevant(self, words=None):
+	def isProbablyRelevant_old(self, words=None):
 		# should only be called after NER() was called
 		# return 0 for not relevant
 		# 1 for contextual relevant#
@@ -209,19 +236,21 @@ class MessageFilter:
 
 		return 0
 
-	def isContextRelevant(self, n=1):
+	def isContextRelevant(self, tag_list=None, n=1):
 		# should only be called after isProbablyRelevant() was called
 		if n == 6: #searching to a maximum of n-1
 			return False
 
 		context_text = Helper.one_text_from_message_stream(Helper.get_latest_n_messages(self.message.chat.id, self.message.from_user.id, n))
-		print ("testing context relevance of :", context_text)
+		print ("testing context relevance of :", context_text, n)
 
-		self.NER(context_text)
-		if self.isProbablyRelevant(context_text) == 2:
+		tag_list = self.NER(context_text)
+		print ("isContextRelevant tag_list:")
+		print(tag_list)
+		if self.isProbablyRelevant(tag_list) == 2:
 			return True
 		else:
-			return self.isContextRelevant(n+1)
+			return self.isContextRelevant(tag_list, n+1)
 
 	def resolveTime(self, timestr):
 		return timestr
@@ -273,6 +302,7 @@ class MessageFilter:
 
 	def readFrameList(self, message):
 		#read frames from file (pickle) and return list of frames
+		#needs message only to get the id
 
 		#create file if not exist
 		if (not os.path.isfile(str(message.chat.id)+"_frames")):
@@ -323,9 +353,12 @@ class MessageFilter:
 		for frame in frame_list:
 			frame.summary()
 
-	def updateOrCreateEventFrame(self, message, tags):
-		result = "verstehe ... nicht"
+	def updateOrCreateEventFrame(self, message, tags=None):
+		result = "None"
 		frame_list = self.readFrameList(message)
+
+		if tags is None:
+			tags = self.latest_tags
 
 		if len(frame_list) > 0: #frames already exist
 			frameToUpdate = self.getFrameToUpdate(tags, frame_list)
@@ -398,27 +431,30 @@ class MessageFilter:
 			offset = 0
 			print("tags:", tags)
 			print("frame.what:" , frame.what)
-			print(frame.what is not None)
+			print(frame.what is not "None")
 			print(frame.what != "")
 			print("ACTION" in tags)
-			if (frame.what is not None and frame.what != "") and "ACTION" in tags:
+			if (frame.what is not "None" and frame.what != "") and "ACTION" in tags:
 				print("1. check true")
 				if frame.what != self.ACTION_str:
 					print ("offset from action")
 					offset += 1
 			else:
 				print ("1. check false")
-			if (frame.where is not None and frame.where != "") and "LOC" in tags:
+			if (frame.where is not "None" and frame.where != "") and "LOC" in tags:
 				if frame.where != self.LOCATION_str:
 					print ("offset from location")
 					offset += 1
 
-			if (frame.date is not None and frame.date != "") and "DEXP" in tags:
+			if (frame.date is not "None" and frame.date != "") and "DEXP" in tags:
 				if frame.date != self.DATE_EXP_str:
 					print ("offset from date exp")
 					offset += 1
 
-			if (frame.time is not None and frame.time != "") and "TEXP" in tags:
+			if (frame.time is not "None" and frame.time != "") and "TEXP" in tags:
+				print ("frame.time:", frame.time, type(frame.time))
+				print("self.TIME_EXP_str", self.TIME_EXP_str, type(self.TIME_EXP_str))
+
 				if frame.time != self.TIME_EXP_str:
 					print ("offset from time exp")
 					offset += 1
