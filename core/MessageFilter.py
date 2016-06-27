@@ -97,9 +97,9 @@ class MessageFilter:
 		# return updated tag_list
 		word_texp = None
 		for (w1, t1), (w2, t2) in list(bigrams(tag_list)):
-			if w1 == 'um' and t2 == "CARD":
+			if w1 == 'um' and t2.strip().isdigit():
 				word_texp = w2
-			elif t1 == "CARD" and w2 == "uhr":
+			elif t1.strip().isdigit() and w2 == "uhr":
 				word_texp = w1
 			self.TIME_EXP_str = word_texp
 
@@ -202,13 +202,9 @@ class MessageFilter:
 		# 2 for relevant
 		if (self.ACTION + self.HUMAN_NAME > 1):
 			return 2
-		if (self.DATE_EXP + self.TIME_EXP >= 1):
-			return 1
-		if self.LOCATION == 1:
-			return 1
-		#if (self.HUMAN_NAME + self.PAV > 1):
-		#	return 1
-		if (self.HUMAN_NAME + self.PTKNEG + self.POS > 1):
+		if (self.ACTION == 1):
+			return 0
+		if (self.DATE_EXP + self.TIME_EXP + self.LOCATION + self.HUMAN_NAME >= 1):
 			return 1
 
 		return 0
